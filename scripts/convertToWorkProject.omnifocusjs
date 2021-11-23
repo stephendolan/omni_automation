@@ -8,7 +8,7 @@
 	"label": "Convert to Work Project",
 	"shortLabel": "Convert to Work Project",
 	"paletteLabel": "Convert to Work Project",
-	"image": "gearshape.fill"
+	"image": "arrow.up.bin.fill"
 }*/
 (() => {
   const action = new PlugIn.Action(function (selection, sender) {
