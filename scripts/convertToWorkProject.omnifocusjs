@@ -1,0 +1,93 @@
+/*{
+	"type": "action",
+	"targets": ["omnifocus"],
+	"author": "Stephen Dolan",
+	"identifier": "com.stephendolan.of.convertToWorkProject",
+	"version": "1.0",
+	"description": "Convert a task to a project in a specific folder",
+	"label": "Convert to Work Project",
+	"shortLabel": "Convert to Work Project",
+	"paletteLabel": "Convert to Work Project",
+	"image": "gearshape.fill"
+}*/
+(() => {
+  const action = new PlugIn.Action(function (selection, sender) {
+    selection.tasks.forEach((task) => {
+      // Pull the task fields
+      const title = task.name;
+      const dueDate = task.dueDate;
+      const deferDate = task.deferDate;
+      const note = task.note;
+
+      // Construct the form
+      const inputForm = new Form();
+
+      const projectNameField = new Form.Field.String(
+        "projectName",
+        "Project Name",
+        title
+      );
+
+      const shouldAppendTask = new Form.Field.Checkbox(
+        "shouldAppendTask",
+        "Append selected task to the new project",
+        true
+      );
+
+      const projectNoteField = new Form.Field.String(
+        "projectNote",
+        "Project Notes",
+        note
+      );
+
+      // Add form elements
+      inputForm.addField(projectNameField);
+      inputForm.addField(projectNoteField);
+      inputForm.addField(shouldAppendTask);
+
+      // Set up the dialog to display the form
+      const formPrompt = "Update the project name and notes if necessary";
+      const buttonTitle = "Continue";
+
+      // Show the form
+      formPromise = inputForm.show(formPrompt, buttonTitle);
+
+      // Ensure that a project name is set
+      inputForm.validate = function (formObject) {
+        textValue = formObject.values["projectName"];
+        return textValue ? true : false;
+      };
+
+      // PERFORM PROCESSES USING FORM DATA
+      formPromise.then(function (formObject) {
+        const projectName = formObject.values["projectName"];
+        const projectNote = formObject.values["projectNote"];
+        const appendInboxTask = formObject.values["shouldAppendTask"];
+
+        // Create the project
+        const project = new Project(projectName, folderNamed("Tuple"));
+        project.note = projectNote;
+        project.dueDate = dueDate;
+        project.deferDate = deferDate;
+
+        // Move or drop the old task
+        if (appendInboxTask) {
+          moveTasks(selection.tasks, project);
+        } else {
+          task.drop(true);
+        }
+
+        // Show the project
+        const projectId = project.id.primaryKey;
+        const projectUrl = "omnifocus:///task/" + projectId;
+        URL.fromString(projectUrl).open();
+      });
+    });
+  });
+
+  action.validate = function (selection, sender) {
+    return selection.tasks.length == 1;
+  };
+
+  return action;
+})();
