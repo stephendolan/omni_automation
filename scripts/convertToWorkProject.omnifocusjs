@@ -5,9 +5,9 @@
 	"identifier": "com.stephendolan.of.convertToWorkProject",
 	"version": "1.0",
 	"description": "Convert a task to a project in a specific folder",
-	"label": "Convert to Work Project",
-	"shortLabel": "Convert to Work Project",
-	"paletteLabel": "Convert to Work Project",
+	"label": "Fancy convert to project",
+	"shortLabel": "Fancy convert to project",
+	"paletteLabel": "Fancy convert to project",
 	"image": "arrow.up.bin.fill"
 }*/
 (() => {
@@ -21,6 +21,14 @@
 
       // Construct the form
       const inputForm = new Form();
+
+      const folderField = new Form.Field.Option(
+        "folder",
+        "Folder",
+        folders,
+        folders.map((folder) => folder.name),
+        folderNamed("Tuple")
+      );
 
       const projectNameField = new Form.Field.String(
         "projectName",
@@ -41,6 +49,7 @@
       );
 
       // Add form elements
+      inputForm.addField(folderField);
       inputForm.addField(projectNameField);
       inputForm.addField(projectNoteField);
       inputForm.addField(shouldAppendTask);
@@ -54,18 +63,22 @@
 
       // Ensure that a project name is set
       inputForm.validate = function (formObject) {
-        textValue = formObject.values["projectName"];
-        return textValue ? true : false;
+        const projectName = formObject.values["projectName"];
+        const folder = formObject.values["folder"];
+        return projectName && folder ? true : false;
       };
 
       // PERFORM PROCESSES USING FORM DATA
       formPromise.then(function (formObject) {
+        const folder = formObject.values["folder"];
+        console.log(folder);
+        console.log(folder.name);
         const projectName = formObject.values["projectName"];
         const projectNote = formObject.values["projectNote"];
         const appendInboxTask = formObject.values["shouldAppendTask"];
 
         // Create the project
-        const project = new Project(projectName, folderNamed("Tuple"));
+        const project = new Project(projectName, folder);
         project.note = projectNote;
         project.dueDate = dueDate;
         project.deferDate = deferDate;
