@@ -22,30 +22,35 @@
       // Construct the form
       const inputForm = new Form();
 
+      // Select the top-level folder for the project
+      const defaultFolderName = "Tuple";
       const folderField = new Form.Field.Option(
         "folder",
         "Folder",
         folders,
         folders.map((folder) => folder.name),
-        folderNamed("Tuple")
+        folderNamed(defaultFolderName)
       );
 
+      // Optionally update the project title
       const projectNameField = new Form.Field.String(
         "projectName",
         "Project Name",
         title
       );
 
-      const shouldAppendTask = new Form.Field.Checkbox(
-        "shouldAppendTask",
-        "Append selected task to the new project",
-        true
-      );
-
+      // Optionally update the project notes
       const projectNoteField = new Form.Field.String(
         "projectNote",
         "Project Notes",
         note
+      );
+
+      // Choose whether or not the task being converted is added as the next action
+      const shouldAppendTask = new Form.Field.Checkbox(
+        "shouldAppendTask",
+        "Append selected task to the new project",
+        true
       );
 
       // Add form elements
@@ -68,7 +73,7 @@
         return projectName && folder ? true : false;
       };
 
-      // PERFORM PROCESSES USING FORM DATA
+      // Once the form is submitted, create the project
       formPromise.then(function (formObject) {
         const folder = formObject.values["folder"];
         console.log(folder);
@@ -98,6 +103,7 @@
     });
   });
 
+  // We only support project conversion for single selected tasks
   action.validate = function (selection, sender) {
     return selection.tasks.length == 1;
   };
