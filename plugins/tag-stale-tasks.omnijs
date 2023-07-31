@@ -4,7 +4,7 @@
 		"type": "action",
 		"identifier": "com.stephendolan.tag-stale-tasks",
 		"version": "1.0",
-		"description": "A plug-in that...",
+		"description": "Find tasks that appear stale and mark them with a tag",
 		"label": "Tag Stale Tasks",
 		"mediumLabel": "Tag Stale Tasks",
 		"longLabel": "Tag Stale Tasks",
