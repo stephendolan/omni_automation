@@ -1,0 +1,39 @@
+/*{
+  "type": "action",
+  "targets": ["omnifocus"],
+  "author": "Stephen Dolan",
+  "identifier": "com.omni-automation.of.export-project-taskpaper",
+  "version": "1.3",
+  "description": "Exports the chosen project to Taskpaper.",
+  "label": "Export Project Taskpaper",
+  "shortLabel": "Export Project",
+  "paletteLabel": "Export Project",
+  "image": "arrow.down.doc"
+}*/
+(() => {
+  var action = new PlugIn.Action(async function (selection, _sender) {
+    try {
+      if (!selection.projects.length > 0) {
+        throw {
+          name: "Selection Issue",
+          message: "Please select one or more projects.",
+        };
+      }
+      var typeID = "com.omnigroup.omnifocus2.export-filetype.plain-text";
+      var baseName = "TaskPaper-Export";
+      var wrapper = await document.makeFileWrapper(baseName, typeID);
+      filesaver = new FileSaver();
+      savedFileURL = await filesaver.show(wrapper);
+    } catch (err) {
+      if (!err.causedByUserCancelling) {
+        new Alert(err.name, err.message).show();
+      }
+    }
+  });
+
+  action.validate = function (selection, _sender) {
+    return (selection.tasks.length > 0)
+  };
+
+  return action;
+})();

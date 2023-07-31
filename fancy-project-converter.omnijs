@@ -1,0 +1,71 @@
+/*{
+    "author": "Stephen Dolan",
+    "targets": ["omnifocus"],
+    "type": "action",
+    "identifier": "com.stephendolan.project-converter",
+    "version": "1.0",
+    "description": "Convert inbox tasks into projects more intelligently.",
+    "label": "Project Converter",
+    "mediumLabel": "Project Converter",
+    "longLabel": "Project Converter",
+    "paletteLabel": "Project Converter",
+    "image": "arrow.uturn.up"
+}*/
+(() => {
+  const action = new PlugIn.Action(async function (selection) {
+    const selectedTask = selection.tasks[0];
+
+    const form = new Form();
+    form.title = "Create Project";
+    form.addField(new Form.Field.String("projectTitle", "Project Title", selectedTask.name));
+    const folders = library.filter((item) => item instanceof Folder).map((folder) => folder.name);
+    form.addField(new Form.Field.Option("folderName", "Folder", folders, null, folders[0]));
+    form.addField(new Form.Field.Checkbox("addToProject", "Add task to project?", true));
+
+    const formPrompt = "Configure your project:"
+    const buttonTitle = "Continue"
+    const formPromise = form.show(formPrompt, buttonTitle)
+
+    form.validate = function (formObject) {
+      const projectTitle = formObject.values['projectTitle'];
+      const folder = formObject.values['folderName'];
+
+      return Boolean(projectTitle) && Boolean(folder);
+    }
+
+    formPromise.then(formObject => {
+      const projectTitle = formObject.values['projectTitle']
+      const addToProject = formObject.values['addToProject']
+      const folderName = formObject.values['folderName']
+
+      const project = new Project(projectTitle, flattenedFolders.byName(folderName).beginning);
+
+      if (addToProject) {
+        moveTasks([selectedTask], project);
+      } else {
+        project.note = selectedTask.note;
+        project.dueDate = selectedTask.dueDate;
+        project.deferDate = selectedTask.deferDate;
+
+        selectedTask.drop(true);
+      }
+
+      // Scroll to and select the most recently-created project.
+      const createdProject = flattenedProjects.byName(projectTitle);
+      if (createdProject) {
+        URL.fromString("omnifocus:///task/" + createdProject.id.primaryKey).open();
+      }
+    })
+
+    formPromise.catch(err => {
+      console.error(err);
+    })
+
+  });
+
+  action.validate = function (selection, _sender) {
+    return (selection.tasks.length === 1)
+  };
+
+  return action;
+})();
