@@ -2,7 +2,7 @@
     "author": "Stephen Dolan",
     "targets": ["omnifocus"],
     "type": "action",
-    "identifier": "com.stephendolan.project-converter",
+    "identifier": "com.stephendolan.convert-to-project",
     "version": "1.0",
     "description": "Convert inbox tasks into projects more intelligently.",
     "label": "Project Converter",
