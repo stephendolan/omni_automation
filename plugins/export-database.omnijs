@@ -1,0 +1,91 @@
+/*{
+    "author": "Stephen Dolan",
+    "targets": ["omnifocus"],
+    "type": "action",
+    "identifier": "com.stephendolan.export-database",
+    "version": "0.1",
+    "description": "A plug-in that exports all tasks and projects to a CSV file and copies it to the clipboard.",
+    "label": "Export Database to Clipboard",
+    "mediumLabel": "Export to Clipboard",
+    "longLabel": "Export Database to Clipboard",
+    "paletteLabel": "Export to Clipboard"
+}*/
+(() => {
+    var action = new PlugIn.Action(function (selection, sender) {
+        // Helper functions
+        function formatDate(date) {
+            return date ? date.toLocaleString() : "";
+        }
+
+        function csvEscape(str) {
+            return `"${str.replace(/"/g, '""')}"`;
+        }
+
+        function projectStatusToString(status) {
+            if (status === Project.Status.Active) {
+                return "Active";
+            } else if (status === Project.Status.OnHold) {
+                return "On Hold";
+            } else if (status === Project.Status.Done) {
+                return "Completed";
+            } else if (status === Project.Status.Dropped) {
+                return "Dropped";
+            } else {
+                return "Unknown";
+            }
+        }
+
+        function taskStatus(task) {
+            if (task.effectiveCompletedDate) {
+                return "Completed";
+            } else if (task.effectiveDropDate) {
+                return "Dropped";
+            } else if (task.effectiveDeferDate) {
+                return "Deferred";
+            } else {
+                return "Active";
+            }
+        }
+
+        // Initialize CSV content
+        var csvContent = "Type,Status,Title,Container,Defer Date,Due Date,Created\n";
+
+        // Export Projects
+        flattenedProjects.forEach(project => {
+            var created = csvEscape(formatDate(project.creationDate));
+            var deferDate = csvEscape(formatDate(project.deferDate));
+            var dueDate = csvEscape(formatDate(project.dueDate));
+            var folderName = project.parentFolder ? project.parentFolder.name : "";
+            var status = projectStatusToString(project.status);
+
+            // Only export incomplete items.
+            if (status !== "Completed" && status !== "Dropped") {
+                csvContent += `Project,${status},${csvEscape(project.name)},${folderName},${deferDate},${dueDate},${created}\n`;
+            }
+        });
+
+        // Export Tasks
+        flattenedTasks.forEach(task => {
+            var created = csvEscape(formatDate(task.added));
+            var deferDate = csvEscape(formatDate(task.effectiveDeferDate));
+            var dueDate = csvEscape(formatDate(task.effectiveDueDate));
+            var projectName = task.project ? task.project.name : "";
+            var status = taskStatus(task);
+
+            // Only export incomplete items.
+            if (status !== "Completed" && status !== "Dropped") {
+                csvContent += `Task,${status},${csvEscape(task.name)},${csvEscape(projectName)},${deferDate},${dueDate},${created}\n`;
+            }
+        });
+
+        // Copy CSV content to clipboard
+        Pasteboard.general.string = csvContent;
+        new Alert("Export Complete", "CSV content copied to clipboard.").show();
+    });
+
+    action.validate = function (selection, sender) {
+        return true;
+    };
+
+    return action;
+})();
