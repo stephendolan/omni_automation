@@ -53,11 +53,11 @@
 
       if (summaryType === "Daily") {
         startDate = endDate = formatDate(today);
-        dateLabel = `Date: ${startDate}`;
+        dateLabel = `${startDate}`;
       } else if (summaryType === "Weekly") {
         startDate = formatDate(getWeekStartDate(today));
         endDate = formatDate(today);
-        dateLabel = `Week: ${startDate} to ${endDate}`;
+        dateLabel = `${startDate} to ${endDate}`;
       } else {
         return; // No valid selection made
       }
