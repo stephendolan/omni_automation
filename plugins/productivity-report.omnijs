@@ -1,0 +1,113 @@
+/*{
+    "author": "OmniAutomation Assistant",
+    "targets": ["omnifocus"],
+    "type": "action",
+    "identifier": "com.omnifocus.assistant.dailyOverview",
+    "version": "1.0",
+    "description": "This script provides an overview of the completed tasks for the current day or week.",
+    "label": "Productivity Report",
+    "mediumLabel": "Productivity Report",
+    "paletteLabel": "Productivity Report",
+    "image": "arrow.up.doc"
+}*/
+
+(() => {
+  var action = new PlugIn.Action(function (selection, sender) {
+    // Function to format the date to YYYY-MM-DD
+    function formatDate(date) {
+      var d = new Date(date),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
+      if (month.length < 2)
+        month = '0' + month;
+      if (day.length < 2)
+        day = '0' + day;
+      return [year, month, day].join('-');
+    }
+
+    // Function to get the start date of the current week (Monday)
+    function getWeekStartDate(date) {
+      var d = new Date(date);
+      var day = d.getDay(),
+        diff = d.getDate() - day + (day == 0 ? -6 : 1); // Adjust if day is Sunday
+      return new Date(d.setDate(diff));
+    }
+
+    // Create a new Form
+    let form = new Form();
+    let summaryTypeField = new Form.Field.Option(
+      "summaryType",
+      "Summary Type",
+      ["Daily", "Weekly"],
+      null,
+      "Daily"
+    );
+    form.addField(summaryTypeField);
+
+    form.show("Choose Summary Type", "Continue").then(form => {
+      let summaryType = form.values["summaryType"];
+
+      let today = new Date();
+      let startDate, endDate;
+
+      if (summaryType === "Daily") {
+        startDate = endDate = formatDate(today);
+      } else if (summaryType === "Weekly") {
+        startDate = formatDate(getWeekStartDate(today));
+        endDate = formatDate(today);
+      } else {
+        return; // No valid selection made
+      }
+
+      // Filter tasks based on the date range
+      let completedTasks = flattenedTasks.filter(task => {
+        return task.completed && formatDate(task.completionDate) >= startDate && formatDate(task.completionDate) <= endDate;
+      });
+
+      // Count tasks with no project (Inbox tasks)
+      let inboxTasksCount = completedTasks.filter(task => !task.containingProject).length;
+
+      // Count tasks with a project
+      let projectTasksCount = completedTasks.length - inboxTasksCount;
+
+      // Projects progressed during the selected period
+      let progressedProjects = new Set(completedTasks.map(task => task.containingProject?.name).filter(name => name));
+
+      // Tasks with due dates completed during the selected period
+      let dueTasksCount = completedTasks.filter(task => task.dueDate).length;
+
+      // Tasks with due dates that weren't finished during the selected period
+      let unfinishedDueTasks = flattenedTasks.filter(task => {
+        let taskDueDate = formatDate(task.dueDate);
+        return !task.completed && task.dueDate && taskDueDate >= startDate && taskDueDate <= endDate;
+      });
+
+      // Webhook URL
+      const webhookUrl = 'https://hook.us1.make.com/0j2fssaok2wudibvn97u5b6gwi092vsg';
+
+      // Data to be sent
+      let data = {
+        date: today,
+        totalCompletedTasks: completedTasks.length,
+        inboxTasks: inboxTasksCount,
+        projectTasks: projectTasksCount,
+        progressedProjects: [...progressedProjects],
+        completedTasksWithDueDates: dueTasksCount,
+        unfinishedTasksWithTodaysDueDate: unfinishedDueTasks.length
+      };
+
+      // Creating a Fetch Request
+      let request = URL.FetchRequest.fromString(webhookUrl);
+      request.method = 'POST';
+      request.bodyString = JSON.stringify(data);
+      request.headers = { 'Content-Type': 'application/json' };
+
+      // Submit the request
+      // Because it's a webhook, we'll know pretty immediately if it doesn't work.
+      request.fetch();
+    });
+  });
+
+  return action;
+})();
