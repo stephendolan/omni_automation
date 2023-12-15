@@ -49,13 +49,15 @@
       let summaryType = form.values["summaryType"];
 
       let today = new Date();
-      let startDate, endDate;
+      let startDate, endDate, dateLabel;
 
       if (summaryType === "Daily") {
         startDate = endDate = formatDate(today);
+        dateLabel = `Date: ${startDate}`;
       } else if (summaryType === "Weekly") {
         startDate = formatDate(getWeekStartDate(today));
         endDate = formatDate(today);
+        dateLabel = `Week: ${startDate} to ${endDate}`;
       } else {
         return; // No valid selection made
       }
@@ -88,7 +90,7 @@
 
       // Data to be sent
       let data = {
-        date: today,
+        date: dateLabel,
         totalCompletedTasks: completedTasks.length,
         inboxTasks: inboxTasksCount,
         projectTasks: projectTasksCount,
