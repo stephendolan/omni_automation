@@ -121,7 +121,7 @@
       // Tasks with due dates that weren't finished during the selected period
       let unfinishedDueTasks = flattenedTasks.filter(task => {
         let taskDueDate = formatDate(task.dueDate);
-        return !task.completed && task.dueDate && taskDueDate >= startDate && taskDueDate <= endDate;
+        return !task.completed && task.dueDate && taskDueDate <= endDate;
       });
 
       // Data to be sent
