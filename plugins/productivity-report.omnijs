@@ -12,6 +12,25 @@
 }*/
 
 (() => {
+  const webhookService = "com.omnifocus.assistant.webhook";
+  const credentials = new Credentials();
+
+  async function retrieveOrRequestWebhookUrl() {
+    var credential = await credentials.read(webhookService);
+    if (!credential) {
+      var inputForm = new Form();
+      var webhookField = new Form.Field.String("webhookUrl", "Webhook URL", "");
+      inputForm.addField(webhookField);
+      var formPrompt = "Enter Webhook URL where results should be sent:";
+      var formObject = await inputForm.show(formPrompt, "Continue");
+      var webhookUrl = formObject.values["webhookUrl"];
+      await credentials.write(webhookService, "user", webhookUrl);
+      return webhookUrl;
+    } else {
+      return credential.password;
+    }
+  }
+
   var action = new PlugIn.Action(function (selection, sender) {
     // Function to format the date to YYYY-MM-DD
     function formatDate(date) {
@@ -105,9 +124,6 @@
         return !task.completed && task.dueDate && taskDueDate >= startDate && taskDueDate <= endDate;
       });
 
-      // Webhook URL
-      const webhookUrl = 'https://hook.us1.make.com/0j2fssaok2wudibvn97u5b6gwi092vsg';
-
       // Data to be sent
       let data = {
         date: dateLabel,
@@ -120,16 +136,20 @@
       };
 
       // Creating a Fetch Request
-      let request = URL.FetchRequest.fromString(webhookUrl);
-      request.method = 'POST';
-      request.bodyString = JSON.stringify(data);
-      request.headers = { 'Content-Type': 'application/json' };
+      retrieveOrRequestWebhookUrl().then(webhookUrl => {
+        let request = URL.FetchRequest.fromString(webhookUrl);
+        request.method = 'POST';
+        request.bodyString = JSON.stringify(data);
+        request.headers = { 'Content-Type': 'application/json' };
 
-      console.log(`Sending request to ${webhookUrl} with data: ${request.bodyString}...`)
+        console.log(`Sending request to ${webhookUrl} with data: ${request.bodyString}...`)
 
-      // Submit the request
-      // Because it's a webhook, we'll know pretty immediately if it doesn't work.
-      request.fetch();
+        // Submit the request
+        // Because it's a webhook, we'll know pretty immediately if it doesn't work.
+        request.fetch();
+      }).catch(error => {
+        console.error("Error handling webhook URL:", error);
+      });
     });
   });
 
