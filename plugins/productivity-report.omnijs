@@ -81,22 +81,33 @@
       let summaryType = form.values["summaryType"];
 
       let today = new Date();
-      let startDate, endDate, dateLabel;
+      let startDateString, startDate, endDateString, endDate, dateLabel;
 
       if (summaryType === "Daily") {
-        startDate = endDate = formatDate(today);
-        dateLabel = `${startDate}`;
+        startDate = new Date(today);
+        endDate = new Date(today);
+        startDate.setHours(0, 0, 0, 0); // Set start date to hour/minute/second zero
+        endDate.setHours(23, 59, 59, 999); // Set end date to maximum hour/minute/second
+        startDateString = endDateString = formatDate(today);
+        dateLabel = `${startDateString}`;
       } else if (summaryType === "Weekly") {
-        startDate = formatDate(getWeekStartDate(today));
-        endDate = formatDate(today);
-        dateLabel = `${startDate} to ${endDate}`;
+        startDate = getWeekStartDate(today);
+        startDate.setHours(0, 0, 0, 0); // Set start date to hour/minute/second zero
+        endDate = today;
+        endDate.setHours(23, 59, 59, 999); // Set end date to maximum hour/minute/second
+        startDateString = formatDate(getWeekStartDate(today));
+        endDateString = formatDate(today);
+        dateLabel = `${startDateString} to ${endDateString}`;
       } else {
         return; // No valid selection made
       }
 
       // Filter tasks based on the date range
       let completedTasks = flattenedTasks.filter(task => {
-        return task.completed && formatDate(task.completionDate) >= startDate && formatDate(task.completionDate) <= endDate;
+        let isDropped = task.effectiveDropDate != null;
+        let isCompleted = task.effectiveCompletionDate != null;
+
+        return !isDropped && isCompleted && task.effectiveCompletionDate >= startDate && task.effectiveCompletionDate <= endDate;
       });
 
       // Count tasks with no project (Inbox tasks)
@@ -120,8 +131,10 @@
 
       // Tasks with due dates that weren't finished during the selected period
       let unfinishedDueTasks = flattenedTasks.filter(task => {
-        let taskDueDate = formatDate(task.dueDate);
-        return !task.completed && task.dueDate && taskDueDate <= endDate;
+        let isDropped = task.effectiveDropDate != null;
+        let isCompleted = task.effectiveCompletionDate != null;
+
+        return !isDropped && !isCompleted && task.effectiveDueDate && task.effectiveDueDate <= endDate;
       });
 
       // Data to be sent
