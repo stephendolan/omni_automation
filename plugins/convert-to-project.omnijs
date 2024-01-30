@@ -18,8 +18,19 @@
     const form = new Form();
     form.title = "Create Project";
     form.addField(new Form.Field.String("projectTitle", "Project Title", selectedTask.name));
-    const folders = library.filter((item) => item instanceof Folder).map((folder) => folder.name);
-    form.addField(new Form.Field.Option("folderName", "Folder", folders, null, folders[0]));
+
+    // Retrieve and format top-level and second-level folders
+    const topLevelFolders = flattenedFolders.filter(folder => !folder.parent);
+    let folderNames = [];
+
+    topLevelFolders.forEach(folder => {
+      folderNames.push(folder.name);
+      folder.folders.forEach(subFolder => {
+        folderNames.push(folder.name + " : " + subFolder.name);
+      });
+    });
+
+    form.addField(new Form.Field.Option("folderName", "Folder", folderNames, null, folderNames[0]));
     form.addField(new Form.Field.Checkbox("addToProject", "Add task to project?", true));
 
     const formPrompt = "Configure your project:"
@@ -31,14 +42,17 @@
       const folder = formObject.values['folderName'];
 
       return Boolean(projectTitle) && Boolean(folder);
-    }
+    };
 
     formPromise.then(formObject => {
-      const projectTitle = formObject.values['projectTitle']
-      const addToProject = formObject.values['addToProject']
-      const folderName = formObject.values['folderName']
+      const projectTitle = formObject.values['projectTitle'];
+      const addToProject = formObject.values['addToProject'];
+      const folderName = formObject.values['folderName'];
 
-      const project = new Project(projectTitle, flattenedFolders.byName(folderName).beginning);
+      // Find the folder by name
+      const folder = flattenedFolders.find(f => f.name === folderName);
+
+      const project = new Project(projectTitle, folder);
 
       if (addToProject) {
         moveTasks([selectedTask], project);
@@ -55,11 +69,11 @@
       if (createdProject) {
         URL.fromString("omnifocus:///task/" + createdProject.id.primaryKey).open();
       }
-    })
+    });
 
     formPromise.catch(err => {
       console.error(err);
-    })
+    });
 
   });
 

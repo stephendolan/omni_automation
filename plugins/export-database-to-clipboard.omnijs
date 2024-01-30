@@ -36,7 +36,7 @@
         }
 
         function taskStatus(task) {
-            if (task.effectiveCompletedDate) {
+            if (task.effectiveCompletionDate) {
                 return "Completed";
             } else if (task.effectiveDropDate) {
                 return "Dropped";
