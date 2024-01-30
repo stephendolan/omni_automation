@@ -2,7 +2,7 @@
     "author": "OmniAutomation Assistant",
     "targets": ["omnifocus"],
     "type": "action",
-    "identifier": "com.omnifocus.assistant.dailyOverview",
+    "identifier": "com.omnifocus.assistant.productivityReport",
     "version": "1.0",
     "description": "This script provides an overview of the completed tasks for the current day or week.",
     "label": "Productivity Report",
