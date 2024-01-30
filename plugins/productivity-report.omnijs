@@ -58,6 +58,19 @@
       }
     }
 
+    // Function to get a full project path, including all parent folders.
+    function fullProjectPath(project) {
+      let path = project.name;
+      let parent = project.parentFolder;
+
+      while (parent) {
+        path = parent.name + " : " + path;
+        parent = parent.parent;
+      }
+
+      return path;
+    }
+
     // Function to get the start date of the current week (Monday)
     function getWeekStartDate(date) {
       var d = new Date(date);
@@ -117,14 +130,26 @@
       let projectTasksCount = completedTasks.length - inboxTasksCount;
 
       // Determine progressed projects and mark completed ones
-      let progressedProjects = new Set();
+      let progressedProjects = [];
+      let completedProjects = []
       completedTasks.forEach(task => {
-        let projectName = task.containingProject?.name;
-        if (projectName) {
-          let projectStatus = task.containingProject.completed ? " (COMPLETED)" : "";
-          progressedProjects.add(projectName + projectStatus);
+        const project = task.containingProject;
+
+        if (project === null) {
+          return;
+        }
+
+        let projectName = fullProjectPath(project);
+
+        if (project.completed) {
+          progressedProjects.push(`${projectName}`);
+        } else {
+          completedProjects.push(`${projectName}`);
         }
       });
+
+      progressedProjects = new Set(progressedProjects.sort());
+      completedProjects = new Set(completedProjects.sort());
 
       // Tasks with due dates completed during the selected period
       let dueTasksCount = completedTasks.filter(task => task.dueDate).length;
@@ -144,6 +169,7 @@
         inboxTasks: inboxTasksCount,
         projectTasks: projectTasksCount,
         progressedProjects: [...progressedProjects],
+        completedProjects: [...completedProjects],
         completedTasksWithDueDates: dueTasksCount,
         unfinishedTasksWithTodaysDueDate: unfinishedDueTasks.length
       };
