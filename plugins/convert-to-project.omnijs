@@ -32,6 +32,7 @@
 
     form.addField(new Form.Field.Option("folderName", "Folder", folderNames, null, folderNames[0]));
     form.addField(new Form.Field.Checkbox("addToProject", "Add task to project?", true));
+    form.addField(new Form.Field.String("newTaskTitle", "Task Title", selectedTask.name));
 
     const formPrompt = "Configure your project:"
     const buttonTitle = "Continue"
@@ -48,6 +49,7 @@
       const projectTitle = formObject.values['projectTitle'];
       const addToProject = formObject.values['addToProject'];
       const folderName = formObject.values['folderName'];
+      const newTaskTitle = formObject.values['newTaskTitle'];
 
       // Find the folder by name
       const folder = flattenedFolders.find(f => f.name === folderName);
@@ -55,6 +57,10 @@
       const project = new Project(projectTitle, folder);
 
       if (addToProject) {
+        if (newTaskTitle) {
+          selectedTask.name = newTaskTitle;
+        }
+
         moveTasks([selectedTask], project);
       } else {
         project.note = selectedTask.note;
