@@ -51,8 +51,10 @@
       const folderName = formObject.values['folderName'];
       const newTaskTitle = formObject.values['newTaskTitle'];
 
-      // Find the folder by name
-      const folder = flattenedFolders.find(f => f.name === folderName);
+      // Find the folder by name, given that users select full paths like "Folder : Subfolder : Terminal Folder"
+      const folderNames = folderName.split(" : ");
+      const terminalFolder = folderNames[folderNames.length - 1];
+      const folder = flattenedFolders.find(f => f.name === terminalFolder);
 
       const project = new Project(projectTitle, folder);
 
