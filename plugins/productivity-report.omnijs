@@ -128,9 +128,9 @@
       let projectName = fullProjectPath(project);
 
       if (project.completed) {
-        progressedProjects.push(`${projectName}`);
-      } else {
         completedProjects.push(`${projectName}`);
+      } else {
+        progressedProjects.push(`${projectName}`);
       }
     });
 
