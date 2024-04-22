@@ -65,12 +65,12 @@
 
         moveTasks([selectedTask], project);
       } else {
-        project.note = selectedTask.note;
-        project.dueDate = selectedTask.dueDate;
-        project.deferDate = selectedTask.deferDate;
-
         selectedTask.drop(true);
       }
+
+      project.note = selectedTask.note;
+      project.dueDate = selectedTask.dueDate;
+      project.deferDate = selectedTask.deferDate;
 
       // Scroll to and select the most recently-created project.
       const createdProject = flattenedProjects.byName(projectTitle);
