@@ -14,6 +14,7 @@
 (() => {
   const action = new PlugIn.Action(async function (selection) {
     const selectedTask = selection.tasks[0];
+    const hasChildren = selectedTask.children.length > 0;
 
     const form = new Form();
     form.title = "Create Project";
@@ -73,12 +74,15 @@
         folderNames[0]
       )
     );
-    form.addField(
-      new Form.Field.Checkbox("addToProject", "Add task to project?", true)
-    );
-    form.addField(
-      new Form.Field.String("newTaskTitle", "Task Title", selectedTask.name)
-    );
+
+    if (!hasChildren) {
+      form.addField(
+        new Form.Field.Checkbox("addToProject", "Add task to project?", true)
+      );
+      form.addField(
+        new Form.Field.String("newTaskTitle", "Task Title", selectedTask.name)
+      );
+    }
 
     const formPrompt = "Configure your project:";
     const buttonTitle = "Continue";
@@ -93,38 +97,38 @@
 
     formPromise.then((formObject) => {
       const projectTitle = formObject.values["projectTitle"];
-      const addToProject = formObject.values["addToProject"];
       const folderName = formObject.values["folderName"];
-      const newTaskTitle = formObject.values["newTaskTitle"];
 
-      // Find the folder by name, given that users select full paths like "Folder : Subfolder : Terminal Folder"
+      // Find the folder by name
       const folderNames = folderName.split(" : ");
       const terminalFolder = folderNames[folderNames.length - 1];
       const folder = flattenedFolders.find((f) => f.name === terminalFolder);
 
       const project = new Project(projectTitle, folder);
 
-      if (addToProject) {
-        if (newTaskTitle) {
-          selectedTask.name = newTaskTitle;
-        }
-
-        moveTasks([selectedTask], project);
+      if (hasChildren) {
+        moveTasks(selectedTask.children, project);
       } else {
-        selectedTask.drop(true);
+        const addToProject = formObject.values["addToProject"];
+        const newTaskTitle = formObject.values["newTaskTitle"];
+
+        if (addToProject) {
+          const newTask = new Task(newTaskTitle || selectedTask.name, project);
+          newTask.note = selectedTask.note;
+          newTask.dueDate = selectedTask.dueDate;
+          newTask.deferDate = selectedTask.deferDate;
+        }
       }
 
+      // Copy properties from the original task to the project
       project.note = selectedTask.note;
       project.dueDate = selectedTask.dueDate;
       project.deferDate = selectedTask.deferDate;
 
-      // Scroll to and select the most recently-created project.
-      const createdProject = flattenedProjects.byName(projectTitle);
-      if (createdProject) {
-        URL.fromString(
-          "omnifocus:///task/" + createdProject.id.primaryKey
-        ).open();
-      }
+      selectedTask.drop(true);
+
+      // Scroll to and select the created project.
+      URL.fromString("omnifocus:///task/" + project.id.primaryKey).open();
     });
 
     formPromise.catch((err) => {
