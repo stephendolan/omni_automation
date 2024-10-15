@@ -17,60 +17,90 @@
 
     const form = new Form();
     form.title = "Create Project";
-    form.addField(new Form.Field.String("projectTitle", "Project Title", selectedTask.name));
+    form.addField(
+      new Form.Field.String("projectTitle", "Project Title", selectedTask.name)
+    );
 
     // Retrieve and format top-level and second-level folders, excluding dropped folders
-    const topLevelFolders = flattenedFolders.filter(folder => !folder.parent && folder.status !== Folder.Status.Dropped);
+    const topLevelFolders = flattenedFolders.filter(
+      (folder) => !folder.parent && folder.status !== Folder.Status.Dropped
+    );
     let folderNames = [];
 
-    topLevelFolders.forEach(folder => {
+    topLevelFolders.forEach((folder) => {
       folderNames.push(folder.name);
-      folder.folders.filter(subFolder => subFolder.status !== Folder.Status.Dropped).forEach(subFolder => {
-        folderNames.push(folder.name + " : " + subFolder.name);
-      });
+      folder.folders
+        .filter((subFolder) => subFolder.status !== Folder.Status.Dropped)
+        .forEach((subFolder) => {
+          folderNames.push(folder.name + " : " + subFolder.name);
+        });
     });
 
     const defaultFolderStart = "Tuple : Ops";
     const prioritizedFolder = "Tuple";
     folderNames.sort((a, b) => {
-      if (a.startsWith(defaultFolderStart) && !b.startsWith(defaultFolderStart)) {
+      if (
+        a.startsWith(defaultFolderStart) &&
+        !b.startsWith(defaultFolderStart)
+      ) {
         return -1;
-      } else if (!a.startsWith(defaultFolderStart) && b.startsWith(defaultFolderStart)) {
+      } else if (
+        !a.startsWith(defaultFolderStart) &&
+        b.startsWith(defaultFolderStart)
+      ) {
         return 1;
-      } else if (a.startsWith(prioritizedFolder) && !b.startsWith(prioritizedFolder)) {
+      } else if (
+        a.startsWith(prioritizedFolder) &&
+        !b.startsWith(prioritizedFolder)
+      ) {
         return -1;
-      } else if (!a.startsWith(prioritizedFolder) && b.startsWith(prioritizedFolder)) {
+      } else if (
+        !a.startsWith(prioritizedFolder) &&
+        b.startsWith(prioritizedFolder)
+      ) {
         return 1;
       } else {
         return a.localeCompare(b);
       }
     });
 
-    form.addField(new Form.Field.Option("folderName", "Folder", folderNames, null, folderNames[0]));
-    form.addField(new Form.Field.Checkbox("addToProject", "Add task to project?", true));
-    form.addField(new Form.Field.String("newTaskTitle", "Task Title", selectedTask.name));
+    form.addField(
+      new Form.Field.Option(
+        "folderName",
+        "Folder",
+        folderNames,
+        null,
+        folderNames[0]
+      )
+    );
+    form.addField(
+      new Form.Field.Checkbox("addToProject", "Add task to project?", true)
+    );
+    form.addField(
+      new Form.Field.String("newTaskTitle", "Task Title", selectedTask.name)
+    );
 
-    const formPrompt = "Configure your project:"
-    const buttonTitle = "Continue"
-    const formPromise = form.show(formPrompt, buttonTitle)
+    const formPrompt = "Configure your project:";
+    const buttonTitle = "Continue";
+    const formPromise = form.show(formPrompt, buttonTitle);
 
     form.validate = function (formObject) {
-      const projectTitle = formObject.values['projectTitle'];
-      const folder = formObject.values['folderName'];
+      const projectTitle = formObject.values["projectTitle"];
+      const folder = formObject.values["folderName"];
 
       return Boolean(projectTitle) && Boolean(folder);
     };
 
-    formPromise.then(formObject => {
-      const projectTitle = formObject.values['projectTitle'];
-      const addToProject = formObject.values['addToProject'];
-      const folderName = formObject.values['folderName'];
-      const newTaskTitle = formObject.values['newTaskTitle'];
+    formPromise.then((formObject) => {
+      const projectTitle = formObject.values["projectTitle"];
+      const addToProject = formObject.values["addToProject"];
+      const folderName = formObject.values["folderName"];
+      const newTaskTitle = formObject.values["newTaskTitle"];
 
       // Find the folder by name, given that users select full paths like "Folder : Subfolder : Terminal Folder"
       const folderNames = folderName.split(" : ");
       const terminalFolder = folderNames[folderNames.length - 1];
-      const folder = flattenedFolders.find(f => f.name === terminalFolder);
+      const folder = flattenedFolders.find((f) => f.name === terminalFolder);
 
       const project = new Project(projectTitle, folder);
 
@@ -91,18 +121,19 @@
       // Scroll to and select the most recently-created project.
       const createdProject = flattenedProjects.byName(projectTitle);
       if (createdProject) {
-        URL.fromString("omnifocus:///task/" + createdProject.id.primaryKey).open();
+        URL.fromString(
+          "omnifocus:///task/" + createdProject.id.primaryKey
+        ).open();
       }
     });
 
-    formPromise.catch(err => {
+    formPromise.catch((err) => {
       console.error(err);
     });
-
   });
 
   action.validate = function (selection, _sender) {
-    return (selection.tasks.length === 1)
+    return selection.tasks.length === 1;
   };
 
   return action;
