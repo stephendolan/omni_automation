@@ -1,5 +1,5 @@
-// TypeScript definitions for OmniFocus 4 (161.0.6) on macOS 11.5.1
-// Generated on 2021-08-13 00:12:15 +0000
+// TypeScript definitions for OmniFocus 4.5.1 (180.2.2) on macOS 15.3
+// Generated on 2025-02-11 20:08:32 +0000
 
 // To use these definitions, save this file as `OmniFocus.d.ts`
 // and create a `tsconfig.json` file with compiler settings which indicate
@@ -16,14 +16,14 @@
 
 declare class Alert {
     constructor (title: string, message: string);
-    show(callback: Function | null): Promise<number>;
-    addOption(string: string);
+    show(callback: (option: number) => void | null): Promise<number>;
+    addOption(string: string): void;
 }
 
 // Application
 
 declare class Application {
-    openDocument(from: Document | null, url: URL, completed: Function);
+    openDocument(from: Document | null, url: URL, completed: (documentOrError: Document | Error, alreadyOpen: boolean) => void): void;
     readonly buildVersion: Version;
     readonly commandKeyDown: boolean;
     readonly controlKeyDown: boolean;
@@ -68,7 +68,7 @@ declare class SectionArray extends Array {
 // Library
 
 declare class Library extends SectionArray {
-    apply(f: Function): ApplyResult | null;
+    apply(f: (section: Project | Folder) => ApplyResult | null): ApplyResult | null;
     readonly beginning: Folder.ChildInsertionLocation;
     readonly ending: Folder.ChildInsertionLocation;
 }
@@ -82,7 +82,7 @@ declare class TagArray extends Array {
 // Tags
 
 declare class Tags extends TagArray {
-    apply(f: Function): ApplyResult | null;
+    apply(f: (tag: Tag) => ApplyResult | null): ApplyResult | null;
     readonly beginning: Tag.ChildInsertionLocation;
     readonly ending: Tag.ChildInsertionLocation;
 }
@@ -96,9 +96,26 @@ declare class TaskArray extends Array {
 // Inbox
 
 declare class Inbox extends TaskArray {
-    apply(f: Function): ApplyResult | null;
+    apply(f: (task: Task) => ApplyResult | null): ApplyResult | null;
     readonly beginning: Task.ChildInsertionLocation;
     readonly ending: Task.ChildInsertionLocation;
+}
+
+// Audio
+
+declare namespace Audio {
+    function playAlert(alert: Audio.Alert | null, completed: () => void | null): void;
+}
+
+declare class Audio {
+}
+
+// Audio.Alert
+
+declare namespace Audio {
+    class Alert {
+        constructor (url: URL);
+    }
 }
 
 // Calendar
@@ -185,14 +202,21 @@ declare namespace ColorSpace {
 declare class ColorSpace {
 }
 
+// CombinedValues
+
+declare class CombinedValues {
+    readonly name: string;
+    readonly values: Array<Object>;
+}
+
 // Console
 
 declare class Console {
-    log(message: Object, additional: Array<Object | null>);
-    error(message: Object, additional: Array<Object | null>);
-    info(message: Object, additional: Array<Object | null>);
-    warn(message: Object, additional: Array<Object | null>);
-    clear();
+    log(message: Object, additional: Array<Object | null>): void;
+    error(message: Object, additional: Array<Object | null>): void;
+    info(message: Object, additional: Array<Object | null>): void;
+    warn(message: Object, additional: Array<Object | null>): void;
+    clear(): void;
 }
 
 // Credentials
@@ -200,21 +224,60 @@ declare class Console {
 declare class Credentials {
     constructor ();
     read(service: string): object | null;
-    write(service: string, username: string, password: string);
-    remove(service: string);
+    write(service: string, username: string, password: string): void;
+    remove(service: string): void;
     readBookmark(service: string): URL.Bookmark | null;
-    writeBookmark(service: string, bookmark: URL.Bookmark);
+    writeBookmark(service: string, bookmark: URL.Bookmark): void;
+}
+
+// Crypto
+
+declare namespace Crypto {
+    function randomData(length: number): Data;
+}
+
+declare class Crypto {
+}
+
+// Crypto.SHA256
+
+declare namespace Crypto {
+    class SHA256 {
+        constructor ();
+        update(data: Data): void;
+        finalize(): Data;
+    }
+}
+
+// Crypto.SHA384
+
+declare namespace Crypto {
+    class SHA384 {
+        constructor ();
+        update(data: Data): void;
+        finalize(): Data;
+    }
+}
+
+// Crypto.SHA512
+
+declare namespace Crypto {
+    class SHA512 {
+        constructor ();
+        update(data: Data): void;
+        finalize(): Data;
+    }
 }
 
 // Data
 
 declare namespace Data {
-    function fromString(string: string): Data;
+    function fromString(string: string, encoding: StringEncoding | null): Data;
     function fromBase64(string: string): Data;
 }
 
 declare class Data {
-    toString(): string;
+    toString(encoding: StringEncoding | null): string;
     toBase64(): string;
     readonly length: number;
     readonly toObject: Object | null;
@@ -223,6 +286,7 @@ declare class Data {
 // Database
 
 declare class Database {
+    objectForURL(url: URL): DatabaseObject | null;
     tagNamed(name: string): Tag | null;
     folderNamed(name: string): Folder | null;
     projectNamed(name: string): Project | null;
@@ -230,22 +294,23 @@ declare class Database {
     foldersMatching(search: string): Array<Folder>;
     tagsMatching(search: string): Array<Tag>;
     taskNamed(name: string): Task | null;
-    save();
-    moveTasks(tasks: Array<Task>, position: Project | Task | Task.ChildInsertionLocation);
+    save(): void;
+    moveTasks(tasks: Array<Task>, position: Project | Task | Task.ChildInsertionLocation): void;
     duplicateTasks(tasks: Array<Task>, position: Project | Task | Task.ChildInsertionLocation): TaskArray;
     convertTasksToProjects(tasks: Array<Task>, position: Folder | Folder.ChildInsertionLocation): Array<Project>;
-    moveSections(sections: Array<Project | Folder>, position: Folder | Folder.ChildInsertionLocation);
+    moveSections(sections: Array<Project | Folder>, position: Folder | Folder.ChildInsertionLocation): void;
     duplicateSections(sections: Array<Project | Folder>, position: Folder | Folder.ChildInsertionLocation): SectionArray;
-    moveTags(tags: Array<Tag>, position: Tag | Tag.ChildInsertionLocation);
+    moveTags(tags: Array<Tag>, position: Tag | Tag.ChildInsertionLocation): void;
     duplicateTags(tags: Array<Tag>, position: Tag | Tag.ChildInsertionLocation): TagArray;
-    cleanUp();
-    undo();
-    redo();
-    deleteObject(object: DatabaseObject);
-    copyTasksToPasteboard(tasks: Array<Task>, pasteboard: Pasteboard);
+    cleanUp(): void;
+    undo(): void;
+    redo(): void;
+    deleteObject(object: DatabaseObject): void;
+    copyTasksToPasteboard(tasks: Array<Task>, pasteboard: Pasteboard): void;
     canPasteTasks(pasteboard: Pasteboard): boolean;
     pasteTasksFromPasteboard(pasteboard: Pasteboard): Array<Task>;
     readonly app: Application;
+    readonly baseStyle: Style;
     readonly canRedo: boolean;
     readonly canUndo: boolean;
     readonly console: Console;
@@ -263,10 +328,33 @@ declare class Database {
     readonly tags: Tags;
 }
 
+// Database.Fetch
+
+declare namespace Database {
+    class Fetch {
+        readonly type: Database.Fetch.Type;
+    }
+}
+
+// Database.Fetch.Type
+
+declare namespace Database.Fetch.Type {
+    const Inbox: Database.Fetch.Type;
+    const Other: Database.Fetch.Type;
+    const Untagged: Database.Fetch.Type;
+    const all: Array<Database.Fetch.Type>;
+}
+
+declare namespace Database.Fetch {
+    class Type {
+    }
+}
+
 // DatabaseObject
 
 declare class DatabaseObject {
     readonly id: ObjectIdentifier;
+    readonly url: URL | null;
 }
 
 // DatedObject
@@ -295,7 +383,7 @@ declare class Folder extends ActiveObject {
     projectNamed(name: string): Project | null;
     sectionNamed(name: string): Project | Folder | null;
     childNamed(name: string): Project | Folder | null;
-    apply(f: Function): ApplyResult | null;
+    apply(f: (folder: Folder) => ApplyResult | null): ApplyResult | null;
     readonly after: Folder.ChildInsertionLocation;
     readonly before: Folder.ChildInsertionLocation;
     readonly beginning: Folder.ChildInsertionLocation;
@@ -324,14 +412,20 @@ declare class Tag extends ActiveObject {
     constructor (name: string, position: Tag | Tag.ChildInsertionLocation | null);
     tagNamed(name: string): Tag | null;
     childNamed(name: string): Tag | null;
-    apply(f: Function): ApplyResult | null;
+    beforeTask(task: Task | null): Tag.TaskInsertionLocation;
+    afterTask(task: Task | null): Tag.TaskInsertionLocation;
+    moveTask(task: Task, location: Tag.TaskInsertionLocation): void;
+    moveTasks(tasks: Array<Task>, location: Tag.TaskInsertionLocation): void;
+    apply(f: (tag: Tag) => ApplyResult | null): ApplyResult | null;
     readonly after: Tag.ChildInsertionLocation;
     allowsNextAction: boolean;
     readonly availableTasks: TaskArray;
     readonly before: Tag.ChildInsertionLocation;
     readonly beginning: Tag.ChildInsertionLocation;
+    readonly beginningOfTasks: Tag.TaskInsertionLocation;
     readonly children: TagArray;
     readonly ending: Tag.ChildInsertionLocation;
+    readonly endingOfTasks: Tag.TaskInsertionLocation;
     readonly flattenedChildren: TagArray;
     readonly flattenedTags: TagArray;
     name: string;
@@ -354,27 +448,32 @@ declare class Task extends ActiveObject {
     constructor (name: string, position: Project | Task | Task.ChildInsertionLocation | null);
     taskNamed(name: string): Task | null;
     childNamed(name: string): Task | null;
-    appendStringToNote(stringToAppend: string);
-    addLinkedFileURL(url: URL);
-    removeLinkedFileWithURL(url: URL);
-    addAttachment(attachment: FileWrapper);
-    removeAttachmentAtIndex(index: number);
-    addTag(tag: Tag);
-    addTags(tags: Array<Tag>);
-    removeTag(tag: Tag);
-    removeTags(tags: Array<Tag>);
-    clearTags();
+    appendStringToNote(stringToAppend: string): void;
+    addLinkedFileURL(url: URL): void;
+    removeLinkedFileWithURL(url: URL): void;
+    addAttachment(attachment: FileWrapper): void;
+    removeAttachmentAtIndex(index: number): void;
+    beforeTag(tag: Tag | null): Task.TagInsertionLocation;
+    afterTag(tag: Tag | null): Task.TagInsertionLocation;
+    addTag(tag: Tag, location: Task.TagInsertionLocation | null): void;
+    addTags(tags: Array<Tag>, location: Task.TagInsertionLocation | null): void;
+    moveTag(tag: Tag, location: Task.TagInsertionLocation): void;
+    moveTags(tags: Array<Tag>, location: Task.TagInsertionLocation): void;
+    removeTag(tag: Tag): void;
+    removeTags(tags: Array<Tag>): void;
+    clearTags(): void;
     markComplete(date: Date | null): Task;
-    markIncomplete();
-    drop(allOccurrences: boolean);
-    apply(f: Function): ApplyResult | null;
+    markIncomplete(): void;
+    drop(allOccurrences: boolean, dateDropped: Date | null): void;
+    apply(f: (task: Task) => ApplyResult | null): ApplyResult | null;
     addNotification(info: number | Date): Task.Notification;
-    removeNotification(notification: Task.Notification);
+    removeNotification(notification: Task.Notification): void;
     readonly after: Task.ChildInsertionLocation;
     assignedContainer: Project | Task | Inbox | null;
     attachments: Array<FileWrapper>;
     readonly before: Task.ChildInsertionLocation;
     readonly beginning: Task.ChildInsertionLocation;
+    readonly beginningOfTags: Task.TagInsertionLocation;
     readonly children: TaskArray;
     readonly completed: boolean;
     completedByChildren: boolean;
@@ -384,11 +483,13 @@ declare class Task extends ActiveObject {
     readonly dropDate: Date | null;
     dueDate: Date | null;
     readonly effectiveCompletedDate: Date | null;
+    readonly effectiveCompletionDate: Date | null;
     readonly effectiveDeferDate: Date | null;
     readonly effectiveDropDate: Date | null;
     readonly effectiveDueDate: Date | null;
     readonly effectiveFlagged: boolean;
     readonly ending: Task.ChildInsertionLocation;
+    readonly endingOfTags: Task.TagInsertionLocation;
     estimatedMinutes: number | null;
     flagged: boolean;
     readonly flattenedChildren: TaskArray;
@@ -398,6 +499,7 @@ declare class Task extends ActiveObject {
     readonly linkedFileURLs: Array<URL>;
     name: string;
     note: string;
+    noteText: Text;
     readonly notifications: Array<Task.Notification>;
     readonly parent: Task | null;
     readonly project: Project | null;
@@ -421,8 +523,10 @@ declare namespace Perspective {
     class Custom extends DatedObject {
         fileWrapper(): FileWrapper;
         writeFileRepresentationIntoDirectory(parentURL: URL): URL;
+        archivedFilterRules: Object;
+        archivedTopLevelFilterAggregation: string | null;
         readonly identifier: string;
-        readonly name: string;
+        name: string;
     }
 }
 
@@ -451,20 +555,20 @@ declare namespace Project {
 declare class Project extends DatabaseObject {
     constructor (name: string, position: Folder | Folder.ChildInsertionLocation | null);
     taskNamed(name: string): Task | null;
-    appendStringToNote(stringToAppend: string);
-    addAttachment(attachment: FileWrapper);
-    removeAttachmentAtIndex(index: number);
+    appendStringToNote(stringToAppend: string): void;
+    addAttachment(attachment: FileWrapper): void;
+    removeAttachmentAtIndex(index: number): void;
     markComplete(date: Date | null): Task;
-    markIncomplete();
+    markIncomplete(): void;
     addNotification(info: number | Date): Task.Notification;
-    removeNotification(notification: Task.Notification);
-    addTag(tag: Tag);
-    addTags(tags: Array<Tag>);
-    removeTag(tag: Tag);
-    removeTags(tags: Array<Tag>);
-    clearTags();
-    addLinkedFileURL(url: URL);
-    removeLinkedFileWithURL(url: URL);
+    removeNotification(notification: Task.Notification): void;
+    addTag(tag: Tag): void;
+    addTags(tags: Array<Tag>): void;
+    removeTag(tag: Tag): void;
+    removeTags(tags: Array<Tag>): void;
+    clearTags(): void;
+    addLinkedFileURL(url: URL): void;
+    removeLinkedFileWithURL(url: URL): void;
     readonly after: Folder.ChildInsertionLocation;
     attachments: Array<FileWrapper>;
     readonly before: Folder.ChildInsertionLocation;
@@ -495,6 +599,7 @@ declare class Project extends DatabaseObject {
     nextReviewDate: Date | null;
     readonly nextTask: Task | null;
     note: string;
+    noteText: Text;
     readonly notifications: Array<Task.Notification>;
     readonly parentFolder: Folder | null;
     repetitionRule: Task.RepetitionRule | null;
@@ -565,6 +670,7 @@ declare class Device {
     readonly mac: boolean;
     readonly operatingSystemVersion: Version;
     readonly type: DeviceType | null;
+    readonly visionPro: boolean;
 }
 
 // DeviceType
@@ -574,6 +680,7 @@ declare namespace DeviceType {
     const iPad: DeviceType;
     const iPhone: DeviceType;
     const mac: DeviceType;
+    const visionPro: DeviceType;
 }
 
 declare class DeviceType {
@@ -582,18 +689,18 @@ declare class DeviceType {
 // Document
 
 declare namespace Document {
-    function makeNew(resultFunction: Function | null): Promise<Document>;
-    function makeNewAndShow(resultFunction: Function | null): Promise<Document>;
+    function makeNew(resultFunction: (document: Document | Error) => void | null): Promise<Document>;
+    function makeNewAndShow(resultFunction: (document: Document | Error) => void | null): Promise<Document>;
 }
 
 declare class Document {
-    close(didCancel: Function | null);
-    save();
+    close(didCancel: (document: Document) => void | null): void;
+    save(): void;
     fileWrapper(type: string | null): FileWrapper;
     makeFileWrapper(baseName: string, type: string | null): Promise<FileWrapper>;
-    undo();
-    redo();
-    show(resultFunction: Function | null);
+    undo(): void;
+    redo(): void;
+    show(completed: () => void | null): void;
     readonly canRedo: boolean;
     readonly canUndo: boolean;
     readonly fileType: string | null;
@@ -606,6 +713,7 @@ declare class Document {
 declare class DatabaseDocument extends Document {
     newWindow(): Promise<DocumentWindow>;
     newTabOnWindow(window: DocumentWindow): Promise<DocumentWindow>;
+    sync(): Promise<boolean>;
     readonly windows: Array<DocumentWindow>;
 }
 
@@ -613,7 +721,7 @@ declare class DatabaseDocument extends Document {
 
 declare class Email {
     constructor ();
-    generate();
+    generate(): void;
     blindCarbonCopy: string | Array<string> | null;
     body: string | null;
     carbonCopy: string | Array<string> | null;
@@ -649,16 +757,32 @@ declare class FileSaver {
 declare namespace FileWrapper {
     function withContents(name: string | null, contents: Data): FileWrapper;
     function withChildren(name: string | null, children: Array<FileWrapper>): FileWrapper;
+    function fromURL(url: URL, options: Array<FileWrapper.ReadingOptions> | null): FileWrapper;
 }
 
 declare class FileWrapper {
+    childNamed(name: string): FileWrapper | null;
     filenameForChild(child: FileWrapper): string | null;
+    write(url: URL, options: Array<FileWrapper.WritingOptions> | null, originalContentsURL: URL | null): void;
     readonly children: Array<FileWrapper>;
     readonly contents: Data | null;
     readonly destination: URL | null;
     filename: string | null;
     preferredFilename: string | null;
     readonly type: FileWrapper.Type;
+}
+
+// FileWrapper.ReadingOptions
+
+declare namespace FileWrapper.ReadingOptions {
+    const Immediate: FileWrapper.ReadingOptions;
+    const WihtoutMapping: FileWrapper.ReadingOptions;
+    const all: Array<FileWrapper.ReadingOptions>;
+}
+
+declare namespace FileWrapper {
+    class ReadingOptions {
+    }
 }
 
 // FileWrapper.Type
@@ -672,6 +796,19 @@ declare namespace FileWrapper.Type {
 
 declare namespace FileWrapper {
     class Type {
+    }
+}
+
+// FileWrapper.WritingOptions
+
+declare namespace FileWrapper.WritingOptions {
+    const Atomic: FileWrapper.WritingOptions;
+    const UpdateNames: FileWrapper.WritingOptions;
+    const all: Array<FileWrapper.WritingOptions>;
+}
+
+declare namespace FileWrapper {
+    class WritingOptions {
     }
 }
 
@@ -745,11 +882,11 @@ declare namespace ForecastDay {
 
 declare class Form {
     constructor ();
-    addField(field: Form.Field, index: number | null);
-    removeField(field: Form.Field);
+    addField(field: Form.Field, index: number | null): void;
+    removeField(field: Form.Field): void;
     show(title: string, confirmTitle: string): Promise<Form>;
     readonly fields: Array<Form.Field>;
-    validate: Function | null;
+    validate: (Form: Form) => boolean | null;
     readonly values: Object;
 }
 
@@ -891,6 +1028,10 @@ declare namespace Formatter.Date {
 
 // Image
 
+declare namespace Image {
+    function symbolNamed(name: string): Image | null;
+}
+
 declare class Image {
 }
 
@@ -923,6 +1064,7 @@ declare class Locale {
 
 declare class MenuItem {
     checked: boolean;
+    image: Image | null;
     label: string;
 }
 
@@ -933,7 +1075,7 @@ declare namespace NamedStyle {
         add(name: string | null): NamedStyle;
         byName(name: string): NamedStyle | null;
         byIdentifier(identifier: string): NamedStyle | null;
-        moveStyles(styles: Array<NamedStyle>, position: NamedStylePosition);
+        moveStyles(styles: Array<NamedStyle>, position: NamedStylePosition): void;
         duplicateStyles(styles: Array<NamedStyle>, position: NamedStylePosition): Array<NamedStyle>;
         readonly all: Array<NamedStyle>;
         readonly beginning: NamedStylePosition;
@@ -944,6 +1086,15 @@ declare namespace NamedStyle {
 // NamedStylePosition
 
 declare class NamedStylePosition {
+}
+
+// Notification
+
+declare class Notification {
+    constructor (title: string);
+    show(): Promise<Notification>;
+    subtitle: string | null;
+    title: string;
 }
 
 // ObjectIdentifier
@@ -962,12 +1113,12 @@ declare namespace Pasteboard {
 
 declare class Pasteboard {
     availableType(types: Array<TypeIdentifier>): TypeIdentifier | null;
-    addItems(items: Array<Pasteboard.Item>);
-    clear();
+    addItems(items: Array<Pasteboard.Item>): void;
+    clear(): void;
     dataForType(type: TypeIdentifier): Data | null;
-    setDataForType(data: Data, type: TypeIdentifier);
+    setDataForType(data: Data, type: TypeIdentifier): void;
     stringForType(type: TypeIdentifier): string | null;
-    setStringForType(string: string, type: TypeIdentifier);
+    setStringForType(string: string, type: TypeIdentifier): void;
     URL: URL | null;
     URLs: Array<URL> | null;
     color: Color | null;
@@ -990,9 +1141,9 @@ declare namespace Pasteboard {
     class Item {
         constructor ();
         dataForType(type: TypeIdentifier): Data | null;
-        setDataForType(data: Data, type: TypeIdentifier);
+        setDataForType(data: Data, type: TypeIdentifier): void;
         stringForType(type: TypeIdentifier): string | null;
-        setStringForType(string: string, type: TypeIdentifier);
+        setStringForType(string: string, type: TypeIdentifier): void;
         readonly types: Array<TypeIdentifier>;
     }
 }
@@ -1040,6 +1191,7 @@ declare class PlugIn {
     handler(identifier: string): PlugIn.Handler | null;
     resourceNamed(name: string): URL | null;
     imageNamed(name: string): Image | null;
+    localizedResourceNamed(filename: string): FileWrapper | null;
     readonly URL: URL | null;
     readonly actions: Array<PlugIn.Action>;
     readonly author: string;
@@ -1103,8 +1255,8 @@ declare class Preferences {
     readNumber(key: string): number;
     readDate(key: string): Date | null;
     readData(key: string): Data | null;
-    write(key: string, value: boolean | string | number | Date | Data | null);
-    remove(key: string);
+    write(key: string, value: boolean | string | number | Date | Data | null): void;
+    remove(key: string): void;
     readonly identifier: string;
 }
 
@@ -1132,6 +1284,13 @@ declare namespace Project {
     }
 }
 
+// QuickOpenScriptAction
+
+declare class QuickOpenScriptAction {
+    image: Image | null;
+    label: string;
+}
+
 // Selection
 
 declare class Selection {
@@ -1152,11 +1311,11 @@ declare class Settings {
     defaultObjectForKey(key: string): Object | null;
     hasNonDefaultObjectForKey(key: string): boolean;
     objectForKey(key: string): Object | null;
-    setObjectForKey(value: Object | null, key: string);
+    setObjectForKey(value: Object | null, key: string): void;
     boolForKey(key: string): boolean;
-    setBoolForKey(value: boolean, key: string);
+    setBoolForKey(value: boolean, key: string): void;
     integerForKey(key: string): number;
-    setIntegerForKey(value: number, key: string);
+    setIntegerForKey(value: number, key: string): void;
     readonly keys: Array<string>;
 }
 
@@ -1164,13 +1323,131 @@ declare class Settings {
 
 declare class SharePanel {
     constructor (items: Array<URL | string | Image | FileWrapper>);
-    addItem(shareItem: URL | string | Image | FileWrapper);
-    addItems(shareItems: Array<URL | string | Image | FileWrapper>);
-    removeItem(shareItem: URL | string | Image | FileWrapper);
-    removeItems(shareItems: Array<URL | string | Image | FileWrapper>);
-    clearItems();
-    show();
+    addItem(shareItem: URL | string | Image | FileWrapper): void;
+    addItems(shareItems: Array<URL | string | Image | FileWrapper>): void;
+    removeItem(shareItem: URL | string | Image | FileWrapper): void;
+    removeItems(shareItems: Array<URL | string | Image | FileWrapper>): void;
+    clearItems(): void;
+    show(): void;
     items: Array<URL | string | Image | FileWrapper>;
+}
+
+// Speech
+
+declare class Speech {
+}
+
+// Speech.Boundary
+
+declare namespace Speech.Boundary {
+    const Immediate: Speech.Boundary;
+    const Word: Speech.Boundary;
+    const all: Array<Speech.Boundary>;
+}
+
+declare namespace Speech {
+    class Boundary {
+    }
+}
+
+// Speech.Synthesizer
+
+declare namespace Speech {
+    class Synthesizer {
+        constructor ();
+        speakUtterance(utterance: Speech.Utterance): void;
+        stopSpeaking(boundary: Speech.Boundary): boolean;
+        pauseSpeaking(boundary: Speech.Boundary): boolean;
+        continueSpeaking(): boolean;
+        readonly paused: boolean;
+        readonly speaking: boolean;
+    }
+}
+
+// Speech.Utterance
+
+declare namespace Speech.Utterance {
+    const defaultSpeechRate: number;
+    const maximumSpeechRate: number;
+    const minimumSpeechRate: number;
+}
+
+declare namespace Speech {
+    class Utterance {
+        constructor (string: string);
+        pitchMultiplier: number;
+        postUtteranceDelay: number;
+        preUtteranceDelay: number;
+        prefersAssistiveTechnologySettings: boolean;
+        rate: number;
+        readonly string: string | null;
+        voice: Speech.Voice | null;
+        volume: number;
+    }
+}
+
+// Speech.Voice
+
+declare namespace Speech.Voice {
+    function withLanguage(code: string | null): Speech.Voice | null;
+    function withIdentifier(identifier: string): Speech.Voice | null;
+    const allVoices: Array<Speech.Voice>;
+    const currentLanguageCode: string;
+}
+
+declare namespace Speech {
+    class Voice {
+        readonly gender: Speech.Voice.Gender;
+        readonly identifier: string;
+        readonly language: string;
+        readonly name: string;
+    }
+}
+
+// Speech.Voice.Gender
+
+declare namespace Speech.Voice.Gender {
+    const Female: Speech.Voice.Gender;
+    const Male: Speech.Voice.Gender;
+    const Unspecified: Speech.Voice.Gender;
+    const all: Array<Speech.Voice.Gender>;
+}
+
+declare namespace Speech.Voice {
+    class Gender {
+    }
+}
+
+// StringEncoding
+
+declare namespace StringEncoding {
+    const ASCII: StringEncoding;
+    const ISO2022JP: StringEncoding;
+    const ISOLatin1: StringEncoding;
+    const ISOLatin2: StringEncoding;
+    const JapaneseEUC: StringEncoding;
+    const MacOSRoman: StringEncoding;
+    const NextStep: StringEncoding;
+    const NonLossyASCII: StringEncoding;
+    const ShiftJIS: StringEncoding;
+    const Symbol: StringEncoding;
+    const UTF16: StringEncoding;
+    const UTF16BigEndian: StringEncoding;
+    const UTF16LittleEndian: StringEncoding;
+    const UTF32: StringEncoding;
+    const UTF32BigEndian: StringEncoding;
+    const UTF32LittleEndian: StringEncoding;
+    const UTF8: StringEncoding;
+    const Unicode: StringEncoding;
+    const WindowsCP1250: StringEncoding;
+    const WindowsCP1251: StringEncoding;
+    const WindowsCP1252: StringEncoding;
+    const WindowsCP1253: StringEncoding;
+    const WindowsCP1254: StringEncoding;
+    const all: Array<StringEncoding>;
+}
+
+declare class StringEncoding {
 }
 
 // Style
@@ -1179,11 +1456,11 @@ declare class Style {
     set(attribute: Style.Attribute, value: Object | null): boolean;
     get(attribute: Style.Attribute): Object | null;
     localValueForAttribute(attribute: Style.Attribute): Object | null;
-    addNamedStyle(namedStyle: NamedStyle);
-    removeNamedStyle(namedStyle: NamedStyle);
+    addNamedStyle(namedStyle: NamedStyle): void;
+    removeNamedStyle(namedStyle: NamedStyle): void;
     influencedBy(otherStyle: Style): boolean;
-    setStyle(style: Style);
-    clear();
+    setStyle(style: Style): void;
+    clear(): void;
     fontFillColor: Color;
     readonly link: URL | null;
     readonly locallyDefinedAttributes: Array<Style.Attribute>;
@@ -1193,7 +1470,7 @@ declare class Style {
 // NamedStyle
 
 declare class NamedStyle extends Style {
-    remove();
+    remove(): void;
     readonly after: NamedStylePosition;
     readonly before: NamedStylePosition;
     readonly identifier: string;
@@ -1276,6 +1553,13 @@ declare namespace Tag {
     }
 }
 
+// Tag.TaskInsertionLocation
+
+declare namespace Tag {
+    class TaskInsertionLocation {
+    }
+}
+
 // Task.ChildInsertionLocation
 
 declare namespace Task {
@@ -1341,6 +1625,13 @@ declare namespace Task {
     }
 }
 
+// Task.TagInsertionLocation
+
+declare namespace Task {
+    class TagInsertionLocation {
+    }
+}
+
 // Text
 
 declare namespace Text {
@@ -1352,10 +1643,10 @@ declare class Text {
     textInRange(range: Text.Range): Text;
     styleForRange(range: Text.Range): Style;
     ranges(component: TextComponent, useEnclosingRange: boolean | null): Array<Text.Range>;
-    replace(range: Text.Range, with_: Text);
-    append(text: Text);
-    insert(position: Text.Position, text: Text);
-    remove(range: Text.Range);
+    replace(range: Text.Range, with_: Text): void;
+    append(text: Text): void;
+    insert(position: Text.Position, text: Text): void;
+    remove(range: Text.Range): void;
     find(string: string, options: Array<Text.FindOption> | null, range: Text.Range | null): Text.Range | null;
     readonly attachments: Array<Text>;
     readonly attributeRuns: Array<Text>;
@@ -1454,12 +1745,12 @@ declare class TimeZone {
 // Timer
 
 declare namespace Timer {
-    function once(interval: number, action: Function): Timer;
-    function repeating(interval: number, action: Function): Timer;
+    function once(interval: number, action: (timer: Timer) => void): Timer;
+    function repeating(interval: number, action: (timer: Timer) => void): Timer;
 }
 
 declare class Timer {
-    cancel();
+    cancel(): void;
     readonly interval: number;
 }
 
@@ -1476,10 +1767,10 @@ declare class ToolbarItem {
 declare class Tree {
     nodeForObject(object: Object): TreeNode | null;
     nodesForObjects(object: Array<Object>): Array<TreeNode>;
-    reveal(nodes: Array<TreeNode>);
-    select(nodes: Array<TreeNode>, extending: boolean | null);
-    copyNodes(nodes: Array<TreeNode>, to: Pasteboard);
-    paste(from: Pasteboard, parentNode: TreeNode | null, childIndex: number | null);
+    reveal(nodes: Array<TreeNode>): void;
+    select(nodes: Array<TreeNode>, extending: boolean | null): void;
+    copyNodes(nodes: Array<TreeNode>, to: Pasteboard): void;
+    paste(from: Pasteboard, parentNode: TreeNode | null, childIndex: number | null): void;
     readonly rootNode: TreeNode;
     readonly selectedNodes: Array<TreeNode>;
 }
@@ -1498,12 +1789,12 @@ declare class SidebarTree extends Tree {
 
 declare class TreeNode {
     childAtIndex(childIndex: number): TreeNode;
-    expand(completely: boolean | null);
-    collapse(completely: boolean | null);
-    expandNote(completely: boolean | null);
-    collapseNote(completely: boolean | null);
-    reveal();
-    apply(f: Function);
+    expand(completely: boolean | null): void;
+    collapse(completely: boolean | null): void;
+    expandNote(completely: boolean | null): void;
+    collapseNote(completely: boolean | null): void;
+    reveal(): void;
+    apply(f: (node: TreeNode) => ApplyResult | null): ApplyResult | null;
     readonly canCollapse: boolean;
     readonly canExpand: boolean;
     readonly childCount: number;
@@ -1524,6 +1815,7 @@ declare class TreeNode {
 // TypeIdentifier
 
 declare namespace TypeIdentifier {
+    function fromPathExtension(pathExtension: string, isDirectory: boolean): TypeIdentifier;
     const URL: TypeIdentifier;
     const binaryPropertyList: TypeIdentifier;
     const csv: TypeIdentifier;
@@ -1561,22 +1853,43 @@ declare class TypeIdentifier {
 declare namespace URL {
     function choose(types: Array<string>): URL | null;
     function chooseFolder(): URL | null;
-    function fromString(string: string): URL | null;
+    function fromString(string: string, relativeToURL: URL | null): URL | null;
+    function fromPath(path: string, isDirectory: boolean, relativeToURL: URL | null): URL;
     function tellScript(app: string, js: string, arg: Object | null): URL | null;
     function tellFunction(app: string, jsFunction: Function, arg: Object | null): URL | null;
     const currentAppScheme: string;
+    const documentsDirectory: URL;
 }
 
 declare class URL {
-    fetch(success: Function, failure: Function | null);
-    call(success: Function, failure: Function | null);
-    open();
+    fetch(success: (contents: Data) => void, failure: (error: Error) => void | null): void;
+    call(success: Function, failure: Function | null): void;
+    open(): void;
     find(types: Array<TypeIdentifier>, recurse: boolean | null): Promise<Array<URL>>;
     toString(): string;
     appendingPathComponent(component: string): URL;
+    appendingPathExtension(pathExtension: string): URL;
+    deletingPathExtension(): URL;
     deletingLastPathComponent(): URL;
+    readonly absoluteString: string;
+    readonly absoluteURL: URL;
+    readonly baseURL: URL | null;
+    readonly fragment: string | null;
+    readonly hasDirectoryPath: boolean;
+    readonly host: string | null;
+    readonly isFileURL: boolean;
+    readonly lastPathComponent: string;
+    readonly password: string | null;
+    readonly path: string | null;
+    readonly pathComponents: Array<string>;
+    readonly pathExtension: string;
+    readonly port: number | null;
+    readonly query: string | null;
+    readonly relativePath: string | null;
+    readonly relativeString: string;
+    readonly scheme: string | null;
     readonly string: string;
-    readonly toObject: Object | null;
+    readonly user: string | null;
 }
 
 // URL.Access
@@ -1599,6 +1912,30 @@ declare namespace URL {
     }
 }
 
+// URL.Components
+
+declare namespace URL.Components {
+    function fromString(string: string): URL.Components | null;
+    function fromURL(url: URL, resolvingAgainstBaseURL: boolean): URL.Components | null;
+}
+
+declare namespace URL {
+    class Components {
+        constructor ();
+        urlRelativeTo(base: URL | null): URL | null;
+        fragment: string | null;
+        host: string | null;
+        password: string | null;
+        path: string;
+        port: number | null;
+        query: string | null;
+        queryItems: Array<URL.QueryItem> | null;
+        scheme: string | null;
+        readonly url: URL | null;
+        user: string | null;
+    }
+}
+
 // URL.FetchRequest
 
 declare namespace URL.FetchRequest {
@@ -1609,10 +1946,14 @@ declare namespace URL {
     class FetchRequest {
         constructor ();
         fetch(): Promise<URL.FetchResponse>;
+        allowsConstrainedNetworkAccess: boolean;
+        allowsExpensiveNetworkAccess: boolean;
         bodyData: Data | null;
         bodyString: string | null;
         cache: string | null;
         headers: object;
+        httpShouldHandleCookies: boolean;
+        httpShouldUsePipelining: boolean;
         method: string | null;
         url: URL | null;
     }
@@ -1629,6 +1970,16 @@ declare namespace URL {
         readonly statusCode: number;
         readonly textEncodingName: string | null;
         readonly url: URL | null;
+    }
+}
+
+// URL.QueryItem
+
+declare namespace URL {
+    class QueryItem {
+        constructor (name: string, value: string | null);
+        readonly name: string;
+        readonly value: string | null;
     }
 }
 
@@ -1684,20 +2035,119 @@ declare class Version {
 // Window
 
 declare class Window {
-    close();
+    close(): void;
 }
 
 // DocumentWindow
 
 declare class DocumentWindow extends Window {
-    selectObjects(objects: Array<DatabaseObject>);
+    selectObjects(objects: Array<DatabaseObject>): void;
     forecastDayForDate(date: Date): ForecastDay;
-    selectForecastDays(days: Array<ForecastDay>);
+    selectForecastDays(days: Array<ForecastDay>): void;
     readonly content: ContentTree | null;
     focus: SectionArray | null;
+    inspectorVisible: boolean;
+    readonly isCompact: boolean;
     readonly isTab: boolean;
     perspective: Perspective.BuiltIn | Perspective.Custom | null;
     readonly selection: Selection;
     readonly sidebar: SidebarTree | null;
+    sidebarVisible: boolean;
     readonly tabGroupWindows: Array<DocumentWindow>;
+    toolbarVisible: boolean;
 }
+
+// XML
+
+declare class XML {
+}
+
+// XML.Document
+
+declare namespace XML.Document {
+    function fromData(data: Data, whitespaceBehavior: XML.WhitespaceBehavior | null): XML.Document;
+}
+
+declare namespace XML {
+    class Document {
+        constructor (rootElement: string | XML.Element, configuration: XML.Document.Configuration | null);
+        xmlData(): Data;
+        addElement(name: string, f: () => void | null): void;
+        appendString(string: string): void;
+        setAttribute(attribute: string, value: string | null): void;
+        readonly dtdPublicID: string | null;
+        readonly dtdSystemID: URL | null;
+        readonly rootElement: XML.Element;
+        readonly schemaID: URL | null;
+        readonly schemaNamespace: string | null;
+        readonly stringEncoding: StringEncoding;
+        readonly topElement: XML.Element;
+        readonly whitespaceBehavior: XML.WhitespaceBehavior;
+    }
+}
+
+// XML.Document.Configuration
+
+declare namespace XML.Document {
+    class Configuration {
+        constructor ();
+        dtdPublicID: string | null;
+        dtdSystemID: URL | null;
+        schemaID: URL | null;
+        schemaNamespace: string | null;
+        stringEncoding: StringEncoding;
+        whitespaceBehavior: XML.WhitespaceBehavior | null;
+    }
+}
+
+// XML.Element
+
+declare namespace XML {
+    class Element {
+        constructor (name: string);
+        childAtIndex(childIndex: number): string | XML.Element | null;
+        insertChild(child: string | XML.Element, childIndex: number): void;
+        appendChild(child: string | XML.Element): void;
+        removeChildAtIndex(childIndex: number): void;
+        removeAllChildren(): void;
+        firstChildNamed(name: string): XML.Element | null;
+        firstChildAtPath(path: string): XML.Element | null;
+        firstChildWithAttribute(attribute: string, value: string): XML.Element | null;
+        attributeNamed(name: string): string | null;
+        setAttribute(name: string, value: string | null): void;
+        apply(f: (node: string | XML.Element) => ApplyResult | null): ApplyResult | null;
+        readonly attributeCount: number;
+        readonly attributeNames: Array<string>;
+        children: Array<string | XML.Element>;
+        readonly childrenCount: number;
+        readonly lastChild: string | XML.Element | null;
+        readonly name: string;
+        readonly stringContents: string;
+    }
+}
+
+// XML.WhitespaceBehavior
+
+declare namespace XML {
+    class WhitespaceBehavior {
+        constructor (defaultBehavior: XML.WhitespaceBehavior.Type);
+        setBehaviorForElementName(behavior: XML.WhitespaceBehavior.Type, elementName: string): void;
+        behaviorForElementName(elementName: string): XML.WhitespaceBehavior.Type;
+        readonly defaultBehavior: XML.WhitespaceBehavior.Type;
+    }
+}
+
+// XML.WhitespaceBehavior.Type
+
+declare namespace XML.WhitespaceBehavior.Type {
+    const Auto: XML.WhitespaceBehavior.Type;
+    const Ignore: XML.WhitespaceBehavior.Type;
+    const Preserve: XML.WhitespaceBehavior.Type;
+    const all: Array<XML.WhitespaceBehavior.Type>;
+}
+
+declare namespace XML.WhitespaceBehavior {
+    class Type {
+    }
+}
+
