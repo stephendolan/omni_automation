@@ -10,17 +10,36 @@
     "longLabel": "Export Database to CSV",
     "paletteLabel": "Export to CSV"
 }*/
+
+/// <reference path="./types/omnifocus.d.ts" />
+/// <reference path="./types/database-export.d.ts" />
+
 (() => {
     var action = new PlugIn.Action(function (selection, sender) {
         // Helper functions
+        /**
+         * Formats a date to a locale string or returns empty string if null
+         * @param {Date | null} date - The date to format
+         * @returns {string} The formatted date string
+         */
         function formatDate(date) {
             return date ? date.toLocaleString() : "";
         }
 
+        /**
+         * Escapes a string for CSV format by wrapping in quotes and escaping existing quotes
+         * @param {string} str - The string to escape
+         * @returns {string} The CSV-escaped string
+         */
         function csvEscape(str) {
             return `"${str.replace(/"/g, '""')}"`;
         }
 
+        /**
+         * Converts a Project.Status to a human-readable string
+         * @param {Project.Status} status - The project status to convert
+         * @returns {string} The human-readable status string
+         */
         function projectStatusToString(status) {
             if (status === Project.Status.Active) {
                 return "Active";
@@ -35,6 +54,11 @@
             }
         }
 
+        /**
+         * Determines the status of a task based on its completion, drop, and defer dates
+         * @param {Task} task - The task to check
+         * @returns {string} The task's status as "Completed", "Dropped", "Deferred", or "Active"
+         */
         function taskStatus(task) {
             if (task.effectiveCompletionDate) {
                 return "Completed";
@@ -83,6 +107,12 @@
         new Alert("Export Complete", "CSV content copied to clipboard.").show();
     });
 
+    /**
+     * Validates whether the action can be performed
+     * @param {Selection} selection - The current selection in OmniFocus
+     * @param {any} sender - The sender of the validation request
+     * @returns {boolean} True if the action can be performed
+     */
     action.validate = function (selection, sender) {
         return true;
     };
