@@ -1622,6 +1622,13 @@ declare namespace Task.Status {
 
 declare namespace Task {
     class Status {
+        static readonly Active: Status
+        static readonly Blocked: Status
+        static readonly Dropped: Status
+        static readonly Completed: Status
+        static readonly Next: Status
+        static readonly Available: Status
+        static readonly DueSoon: Status
     }
 }
 

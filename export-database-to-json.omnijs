@@ -1,0 +1,206 @@
+/*{
+    "author": "Stephen Dolan",
+    "targets": ["omnifocus"],
+    "type": "action",
+    "identifier": "com.stephendolan.export-database-to-json",
+    "version": "0.1",
+    "description": "Exports database to JSON format with hierarchy and perspectives.",
+    "label": "Export Database to JSON",
+    "mediumLabel": "Export to JSON",
+    "longLabel": "Export Database to JSON",
+    "paletteLabel": "Export to JSON"
+}*/
+
+// @ts-check
+/* global Task, Project, Folder, Perspective, PlugIn, Pasteboard, Alert, flattenedTasks, folders, Types */
+
+/// <reference path="./types/omnifocus.d.ts" />
+/// <reference path="./types/database-export.d.ts" />
+
+(() => {
+    let action = new PlugIn.Action(function (selection, sender) {
+        /** @param {Date | null} date */
+        const formatDate = (date) => {
+            return date ? date.toISOString() : null;
+        };
+
+        /** @param {Task.Status} status */
+        const getTaskStatusString = (status) => {
+            if (status === Task.Status.Active) return "Active";
+            if (status === Task.Status.Blocked) return "Blocked";
+            if (status === Task.Status.Dropped) return "Dropped";
+            if (status === Task.Status.Completed) return "Completed";
+            if (status === Task.Status.Next) return "Next";
+            if (status === Task.Status.Available) return "Available";
+            if (status === Task.Status.DueSoon) return "DueSoon";
+            return "Unknown";
+        };
+
+        /** @param {Project.Status} status */
+        const getProjectStatusString = (status) => {
+            if (status === Project.Status.Active) return "Active";
+            if (status === Project.Status.Done) return "Done";
+            if (status === Project.Status.Dropped) return "Dropped";
+            if (status === Project.Status.OnHold) return "OnHold";
+            return "Unknown";
+        };
+
+        /** @param {Task} task @returns {Types.TaskJson | null} */
+        const taskToJson = (task) => {
+            // Skip dropped or completed tasks
+            if (task.taskStatus === Task.Status.Dropped || task.taskStatus === Task.Status.Completed) {
+                return null;
+            }
+
+            return {
+                id: task.id.primaryKey,
+                name: task.name,
+                type: 'Task',
+                status: getTaskStatusString(task.taskStatus),
+                permalink: task.permalink,
+                completed: task.completed,
+                completionDate: formatDate(task.effectiveCompletionDate),
+                dueDate: formatDate(task.effectiveDueDate),
+                deferDate: formatDate(task.effectiveDeferDate),
+                flagged: task.flagged,
+                notes: task.note,
+                tags: task.tags.map(tag => tag.name),
+                estimatedMinutes: task.estimatedMinutes,
+                sequential: task.sequential,
+                repetitionRule: task.repetitionRule ? {
+                    method: task.repetitionRule.method.toString(),
+                    rule: task.repetitionRule.ruleString
+                } : null,
+                children: task.children
+                    .map(child => taskToJson(child))
+                    .filter(child => child !== null) // Filter out null tasks
+            };
+        };
+
+        /** @param {Project} project @returns {Types.ProjectJson | null} */
+        const projectToJson = (project) => {
+            // Skip completed or dropped projects
+            if (project.status === Project.Status.Completed || project.status === Project.Status.Dropped) {
+                return null;
+            }
+
+            const tasks = project.tasks
+                .map(task => taskToJson(task))
+                .filter(task => task !== null); // Filter out null tasks
+
+            return {
+                id: project.id.primaryKey,
+                name: project.name,
+                type: 'Project',
+                status: getProjectStatusString(project.status),
+                permalink: project.permalink,
+                completed: project.completed,
+                completionDate: formatDate(project.effectiveCompletionDate),
+                deferDate: formatDate(project.deferDate),
+                dueDate: formatDate(project.dueDate),
+                flagged: project.flagged,
+                notes: project.note,
+                sequential: project.sequential,
+                tasks: tasks
+            };
+        };
+
+        /** @param {Folder} folder @returns {Types.FolderJson} */
+        const folderToJson = (folder) => {
+            const projects = folder.projects
+                .map(project => projectToJson(project))
+                .filter(project => project !== null); // Filter out null projects
+
+            const folders = folder.folders
+                .map(subfolder => folderToJson(subfolder))
+                .filter(subfolder => subfolder.projects.length > 0 || subfolder.folders.length > 0); // Only include non-empty folders
+
+            return {
+                id: folder.id.primaryKey,
+                name: folder.name,
+                type: 'Folder',
+                folders: folders,
+                projects: projects
+            };
+        };
+
+        /** @param {string} perspectiveName @returns {Types.PerspectiveTaskJson[] | null} */
+        const getPerspectiveData = (perspectiveName) => {
+            try {
+                // Get tasks based on perspective name
+                let tasks;
+                if (perspectiveName === "Next") {
+                    tasks = flattenedTasks.filter(task => 
+                        !task.completed && 
+                        task.taskStatus === Task.Status.Next
+                    );
+                } else if (perspectiveName === "Forecast") {
+                    tasks = flattenedTasks.filter(task => 
+                        !task.completed && 
+                        (task.effectiveDueDate || task.effectiveDeferDate)
+                    );
+                } else {
+                    // For custom perspectives, try to get the perspective by name
+                    const perspective = Perspective.Custom.byName(perspectiveName);
+                    if (!perspective) {
+                        console.error(`Perspective not found: ${perspectiveName}`);
+                        return null;
+                    }
+                    // Since we can't directly get tasks from a perspective,
+                    // we'll need to filter based on the perspective's criteria
+                    tasks = flattenedTasks.filter(task => !task.completed);
+                }
+
+                return tasks.map(task => ({
+                    id: task.id.primaryKey,
+                    name: task.name,
+                    type: 'Task',
+                    status: getTaskStatusString(task.taskStatus),
+                    permalink: task.permalink,
+                    projectName: task.containingProject ? task.containingProject.name : null,
+                    folderName: task.containingProject?.parentFolder?.name || null,
+                    dueDate: formatDate(task.effectiveDueDate),
+                    deferDate: formatDate(task.effectiveDeferDate),
+                    flagged: task.flagged,
+                    tags: task.tags.map(tag => tag.name)
+                }));
+            } catch (error) {
+                console.error(`Error getting perspective ${perspectiveName}:`, error);
+                return null;
+            }
+        };
+
+        /** @type {Types.DatabaseJson} */
+        const output = {
+            timestamp: new Date().toISOString(),
+            folders: folders.map(folder => folderToJson(folder)),
+            perspectives: {
+                next: getPerspectiveData("Next"),
+                forecast: getPerspectiveData("Forecast"),
+                agendas: getPerspectiveData("Agendas"),
+                badWaiting: getPerspectiveData("Bad Waiting"),
+                noAction: getPerspectiveData("No Action")
+            }
+        };
+
+        // Convert to JSON string with pretty printing
+        const jsonString = JSON.stringify(output, null, 2);
+        
+        // Copy to clipboard
+        Pasteboard.general.string = jsonString;
+        
+        // Show confirmation
+        new Alert(
+            "Database Exported", 
+            "The database has been exported to your clipboard in JSON format."
+        ).show();
+
+        console.log("Export completed successfully");
+    });
+
+    action.validate = function (selection, sender) {
+        return true;
+    };
+
+    return action;
+})(); 
