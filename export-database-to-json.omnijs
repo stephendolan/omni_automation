@@ -11,9 +11,6 @@
     "paletteLabel": "Export to JSON"
 }*/
 
-// @ts-check
-/* global Task, Project, Folder, Perspective, PlugIn, Pasteboard, Alert, flattenedTasks, folders, Types */
-
 /// <reference path="./types/omnifocus.d.ts" />
 /// <reference path="./types/database-export.d.ts" />
 
@@ -45,10 +42,27 @@
             return "Unknown";
         };
 
+        /** @param {Task | Project} object */
+        const getPermalink = (object) => {
+            return `omnifocus:///task/${object.id.primaryKey}`;
+        };
+
+        /** @param {Task.RepetitionMethod} method */
+        const getRepetitionMethodString = (method) => {
+            if (method === Task.RepetitionMethod.Fixed) return "Fixed";
+            if (method === Task.RepetitionMethod.Start) return "Start";
+            if (method === Task.RepetitionMethod.Due) return "Due";
+            return "Unknown";
+        };
+
         /** @param {Task} task @returns {Types.TaskJson | null} */
         const taskToJson = (task) => {
-            // Skip dropped or completed tasks
-            if (task.taskStatus === Task.Status.Dropped || task.taskStatus === Task.Status.Completed) {
+            const effectivelyCompleted = task.effectiveCompletionDate !== null;
+            
+            // Skip dropped, blocked, or completed tasks
+            if (task.taskStatus === Task.Status.Dropped || 
+                task.taskStatus === Task.Status.Blocked || 
+                effectivelyCompleted) {
                 return null;
             }
 
@@ -57,8 +71,8 @@
                 name: task.name,
                 type: 'Task',
                 status: getTaskStatusString(task.taskStatus),
-                permalink: task.permalink,
-                completed: task.completed,
+                permalink: getPermalink(task),
+                completed: effectivelyCompleted,
                 completionDate: formatDate(task.effectiveCompletionDate),
                 dueDate: formatDate(task.effectiveDueDate),
                 deferDate: formatDate(task.effectiveDeferDate),
@@ -68,34 +82,36 @@
                 estimatedMinutes: task.estimatedMinutes,
                 sequential: task.sequential,
                 repetitionRule: task.repetitionRule ? {
-                    method: task.repetitionRule.method.toString(),
+                    method: getRepetitionMethodString(task.repetitionRule.method),
                     rule: task.repetitionRule.ruleString
                 } : null,
                 children: task.children
                     .map(child => taskToJson(child))
-                    .filter(child => child !== null) // Filter out null tasks
+                    .filter(child => child !== null)
             };
         };
 
         /** @param {Project} project @returns {Types.ProjectJson | null} */
         const projectToJson = (project) => {
+            const effectivelyCompleted = project.effectiveCompletedDate !== null;
+            
             // Skip completed or dropped projects
-            if (project.status === Project.Status.Completed || project.status === Project.Status.Dropped) {
+            if (project.status === Project.Status.Done || project.status === Project.Status.Dropped) {
                 return null;
             }
 
             const tasks = project.tasks
                 .map(task => taskToJson(task))
-                .filter(task => task !== null); // Filter out null tasks
+                .filter(task => task !== null);
 
             return {
                 id: project.id.primaryKey,
                 name: project.name,
                 type: 'Project',
                 status: getProjectStatusString(project.status),
-                permalink: project.permalink,
-                completed: project.completed,
-                completionDate: formatDate(project.effectiveCompletionDate),
+                permalink: getPermalink(project),
+                completed: effectivelyCompleted,
+                completionDate: formatDate(project.effectiveCompletedDate),
                 deferDate: formatDate(project.deferDate),
                 dueDate: formatDate(project.dueDate),
                 flagged: project.flagged,
@@ -124,19 +140,23 @@
             };
         };
 
-        /** @param {string} perspectiveName @returns {Types.PerspectiveTaskJson[] | null} */
+        /** @param {string} perspectiveName @returns {Types.TaskJson[] | null} */
         const getPerspectiveData = (perspectiveName) => {
             try {
                 // Get tasks based on perspective name
                 let tasks;
                 if (perspectiveName === "Next") {
                     tasks = flattenedTasks.filter(task => 
-                        !task.completed && 
+                        task.effectiveCompletionDate === null && 
+                        task.taskStatus !== Task.Status.Dropped &&
+                        task.taskStatus !== Task.Status.Blocked &&
                         task.taskStatus === Task.Status.Next
                     );
                 } else if (perspectiveName === "Forecast") {
                     tasks = flattenedTasks.filter(task => 
-                        !task.completed && 
+                        task.effectiveCompletionDate === null && 
+                        task.taskStatus !== Task.Status.Dropped &&
+                        task.taskStatus !== Task.Status.Blocked &&
                         (task.effectiveDueDate || task.effectiveDeferDate)
                     );
                 } else {
@@ -148,22 +168,39 @@
                     }
                     // Since we can't directly get tasks from a perspective,
                     // we'll need to filter based on the perspective's criteria
-                    tasks = flattenedTasks.filter(task => !task.completed);
+                    tasks = flattenedTasks.filter(task => 
+                        task.effectiveCompletionDate === null &&
+                        task.taskStatus !== Task.Status.Dropped &&
+                        task.taskStatus !== Task.Status.Blocked
+                    );
                 }
 
-                return tasks.map(task => ({
-                    id: task.id.primaryKey,
-                    name: task.name,
-                    type: 'Task',
-                    status: getTaskStatusString(task.taskStatus),
-                    permalink: task.permalink,
-                    projectName: task.containingProject ? task.containingProject.name : null,
-                    folderName: task.containingProject?.parentFolder?.name || null,
-                    dueDate: formatDate(task.effectiveDueDate),
-                    deferDate: formatDate(task.effectiveDeferDate),
-                    flagged: task.flagged,
-                    tags: task.tags.map(tag => tag.name)
-                }));
+                return tasks.map(task => {
+                    const effectivelyCompleted = task.effectiveCompletionDate !== null;
+                    return {
+                        id: task.id.primaryKey,
+                        name: task.name,
+                        type: 'Task',
+                        status: getTaskStatusString(task.taskStatus),
+                        permalink: getPermalink(task),
+                        completed: effectivelyCompleted,
+                        completionDate: formatDate(task.effectiveCompletionDate),
+                        dueDate: formatDate(task.effectiveDueDate),
+                        deferDate: formatDate(task.effectiveDeferDate),
+                        flagged: task.flagged,
+                        notes: task.note,
+                        tags: task.tags.map(tag => tag.name),
+                        estimatedMinutes: task.estimatedMinutes,
+                        sequential: task.sequential,
+                        repetitionRule: task.repetitionRule ? {
+                            method: getRepetitionMethodString(task.repetitionRule.method),
+                            rule: task.repetitionRule.ruleString
+                        } : null,
+                        children: [],
+                        projectName: task.containingProject ? task.containingProject.name : null,
+                        folderName: task.containingProject?.parentFolder?.name || null
+                    };
+                });
             } catch (error) {
                 console.error(`Error getting perspective ${perspectiveName}:`, error);
                 return null;
@@ -193,7 +230,7 @@
         new Alert(
             "Database Exported", 
             "The database has been exported to your clipboard in JSON format."
-        ).show();
+        ).show(() => null);
 
         console.log("Export completed successfully");
     });

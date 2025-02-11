@@ -19,6 +19,8 @@ declare namespace Types {
             rule: string;
         } | null;
         children: TaskJson[];
+        projectName?: string | null;
+        folderName?: string | null;
     }
 
     interface ProjectJson {
@@ -45,29 +47,15 @@ declare namespace Types {
         projects: ProjectJson[];
     }
 
-    interface PerspectiveTaskJson {
-        id: string;
-        name: string;
-        type: 'Task';
-        status: string;
-        permalink: string;
-        projectName: string | null;
-        folderName: string | null;
-        dueDate: string | null;
-        deferDate: string | null;
-        flagged: boolean;
-        tags: string[];
-    }
-
     interface DatabaseJson {
         timestamp: string;
         folders: FolderJson[];
         perspectives: {
-            next: PerspectiveTaskJson[] | null;
-            forecast: PerspectiveTaskJson[] | null;
-            agendas: PerspectiveTaskJson[] | null;
-            badWaiting: PerspectiveTaskJson[] | null;
-            noAction: PerspectiveTaskJson[] | null;
+            next: TaskJson[] | null;
+            forecast: TaskJson[] | null;
+            agendas: TaskJson[] | null;
+            badWaiting: TaskJson[] | null;
+            noAction: TaskJson[] | null;
         };
     }
 } 

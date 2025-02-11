@@ -2158,3 +2158,7 @@ declare namespace XML.WhitespaceBehavior {
     }
 }
 
+// Global OmniFocus variables
+declare const flattenedTasks: TaskArray;
+declare const folders: FolderArray;
+
