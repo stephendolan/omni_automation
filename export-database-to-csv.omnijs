@@ -2,13 +2,13 @@
     "author": "Stephen Dolan",
     "targets": ["omnifocus"],
     "type": "action",
-    "identifier": "com.stephendolan.export-database",
+    "identifier": "com.stephendolan.export-database-to-csv",
     "version": "0.1",
     "description": "A plug-in that exports all tasks and projects to a CSV file and copies it to the clipboard.",
-    "label": "Export Database to Clipboard",
-    "mediumLabel": "Export to Clipboard",
-    "longLabel": "Export Database to Clipboard",
-    "paletteLabel": "Export to Clipboard"
+    "label": "Export Database to CSV",
+    "mediumLabel": "Export to CSV",
+    "longLabel": "Export Database to CSV",
+    "paletteLabel": "Export to CSV"
 }*/
 (() => {
     var action = new PlugIn.Action(function (selection, sender) {

@@ -19,8 +19,11 @@ Choose a perspective to export out to a file that, when opened, can be added to 
 ### export-project-taskpaper
 Given a selected project, export a plain-text taskpaper export of the project. In an OmniFocus context, this taskpaper file can be copied, pasted to the inbox, then converted to a project.
 
-### export-database
-Export your entire database to your clipboard, for use in things like ChatGPT prompts or advanced reporting/manipulation.
+### export-database-to-csv
+Export your entire database to your clipboard in CSV format, for use in spreadsheets or basic reporting.
+
+### export-database-to-json
+Export your entire database to your clipboard in JSON format, with rich hierarchical structure and perspective data. Ideal for use in AI tools or advanced data analysis.
 
 ### productivity-report
 Send a summary of your completed work for the last day or week to a webhook.
