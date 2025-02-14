@@ -1,1 +1,3 @@
-*.omnijs linguist-language=JavaScript
+*.omnijs linguist-detectable=true
+*.omnijs linguist-language=javascript
+*.omnijs linguist-vendored=false
