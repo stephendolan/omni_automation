@@ -4,7 +4,7 @@
     "type": "action",
     "identifier": "com.stephendolan.export-database-to-json",
     "version": "0.1",
-    "description": "Exports database to JSON format with hierarchy and perspectives.",
+    "description": "Exports database to JSON format.",
     "label": "Export Database to JSON",
     "mediumLabel": "Export to JSON",
     "longLabel": "Export Database to JSON",
