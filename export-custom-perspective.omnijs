@@ -8,8 +8,9 @@
 	"label": "Export Custom Perspective",
 	"shortLabel": "Export Perspective",
 	"paletteLabel": "Export Perspective",
-	"image": "arrow.down.doc"
+  "image": "square.and.arrow.up"
 }*/
+
 (() => {
   var action = new PlugIn.Action(async function (_selection, _sender) {
     try {

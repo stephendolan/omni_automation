@@ -5,10 +5,11 @@
     "identifier": "com.stephendolan.export-database-to-json",
     "version": "0.1",
     "description": "Exports database to JSON format.",
-    "label": "Export Database to JSON",
+    "label": "JSON Export",
     "mediumLabel": "Export to JSON",
     "longLabel": "Export Database to JSON",
-    "paletteLabel": "Export to JSON"
+    "paletteLabel": "Export to JSON",
+    "image": "square.and.arrow.up"
 }*/
 
 /// <reference path="./types/omnifocus.d.ts" />
