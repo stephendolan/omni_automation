@@ -140,69 +140,61 @@
             };
         };
 
-        /** @param {string} perspectiveName @returns {Types.TaskJson[] | null} */
-        const getPerspectiveData = (perspectiveName) => {
+        /** @param {Tag} tag @returns {Types.ContextJson} */
+        const tagToJson = (tag) => {
+            return {
+                id: tag.id.primaryKey,
+                name: tag.name,
+            };
+        };
+
+        /** @param {Perspective.BuiltIn | Perspective.Custom} perspective @returns {(Types.TaskJson | Types.ProjectJson | Types.ContextJson)[] | null} */
+        const getPerspectiveData = (perspective) => {
             try {
-                // Get tasks based on perspective name
-                let tasks;
-                if (perspectiveName === "Next") {
-                    tasks = flattenedTasks.filter(task => 
-                        task.effectiveCompletionDate === null && 
-                        task.taskStatus !== Task.Status.Dropped &&
-                        task.taskStatus !== Task.Status.Blocked &&
-                        task.taskStatus === Task.Status.Next
-                    );
-                } else if (perspectiveName === "Forecast") {
-                    tasks = flattenedTasks.filter(task => 
-                        task.effectiveCompletionDate === null && 
-                        task.taskStatus !== Task.Status.Dropped &&
-                        task.taskStatus !== Task.Status.Blocked &&
-                        (task.effectiveDueDate || task.effectiveDeferDate)
-                    );
-                } else {
-                    // For custom perspectives, try to get the perspective by name
-                    const perspective = Perspective.Custom.byName(perspectiveName);
-                    if (!perspective) {
-                        console.error(`Perspective not found: ${perspectiveName}`);
-                        return null;
-                    }
-                    // Since we can't directly get tasks from a perspective,
-                    // we'll need to filter based on the perspective's criteria
-                    tasks = flattenedTasks.filter(task => 
-                        task.effectiveCompletionDate === null &&
-                        task.taskStatus !== Task.Status.Dropped &&
-                        task.taskStatus !== Task.Status.Blocked
-                    );
+                // Get the first window
+                const window = document.windows[0];
+                if (!window) {
+                    console.error("No window available");
+                    return null;
                 }
 
-                return tasks.map(task => {
-                    const effectivelyCompleted = task.effectiveCompletionDate !== null;
-                    return {
-                        id: task.id.primaryKey,
-                        name: task.name,
-                        type: 'Task',
-                        status: getTaskStatusString(task.taskStatus),
-                        permalink: getPermalink(task),
-                        completed: effectivelyCompleted,
-                        completionDate: formatDate(task.effectiveCompletionDate),
-                        dueDate: formatDate(task.effectiveDueDate),
-                        deferDate: formatDate(task.effectiveDeferDate),
-                        flagged: task.flagged,
-                        notes: task.note,
-                        tags: task.tags.map(tag => tag.name),
-                        estimatedMinutes: task.estimatedMinutes,
-                        sequential: task.sequential,
-                        repetitionRule: task.repetitionRule ? {
-                            method: getRepetitionMethodString(task.repetitionRule.method),
-                            rule: task.repetitionRule.ruleString
-                        } : null,
-                        children: [],
-                        projectName: task.containingProject ? task.containingProject.name : null,
-                        folderName: task.containingProject?.parentFolder?.name || null
-                    };
+                // Set the perspective
+                window.perspective = perspective;
+
+                // Get the content tree
+                const tree = window.content;
+                if (!tree) {
+                    console.error("No content tree available");
+                    return null;
+                }
+
+                const items = [];
+
+                // Walk the tree and collect tasks and projects
+                tree.rootNode.apply(node => {
+                    const item = node.object;
+                    
+                    if (item instanceof Task) {
+                        const taskJson = taskToJson(item);
+                        if (taskJson) {
+                            // Add containing project/folder info for perspective items
+                            taskJson.projectName = item.containingProject ? item.containingProject.name : null;
+                            taskJson.folderName = item.containingProject?.parentFolder?.name || null;
+                            items.push(taskJson);
+                        }
+                    } else if (item instanceof Project) {
+                        const projectJson = projectToJson(item);
+                        if (projectJson) {
+                            // Add containing folder info for perspective items
+                            projectJson.folderName = item.parentFolder ? item.parentFolder.name : null;
+                            items.push(projectJson);
+                        }
+                    }
                 });
+
+                return items;
             } catch (error) {
-                console.error(`Error getting perspective ${perspectiveName}:`, error);
+                console.error(`Error getting perspective ${perspective.name}:`, error);
                 return null;
             }
         };
@@ -212,11 +204,12 @@
             timestamp: new Date().toISOString(),
             folders: folders.map(folder => folderToJson(folder)),
             perspectives: {
-                next: getPerspectiveData("Next"),
-                forecast: getPerspectiveData("Forecast"),
-                agendas: getPerspectiveData("Agendas"),
-                badWaiting: getPerspectiveData("Bad Waiting"),
-                noAction: getPerspectiveData("No Action")
+                inbox: getPerspectiveData(Perspective.BuiltIn.Inbox),
+                forecast: getPerspectiveData(Perspective.BuiltIn.Forecast),
+                next: getPerspectiveData(Perspective.Custom.byName("Next")),
+                agendas: getPerspectiveData(Perspective.Custom.byName("Agendas")),
+                badWaiting: getPerspectiveData(Perspective.Custom.byName("Bad Waiting")),
+                noAction: getPerspectiveData(Perspective.Custom.byName("No Action"))
             }
         };
 
