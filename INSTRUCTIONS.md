@@ -201,7 +201,7 @@ When working with this data:
 4. **Task Importance**:
 
    - `flagged: true` indicates manually flagged important tasks
-   - Tasks in the `next` perspective are explicitly chosen as priorities
+   - Perspectives in the output are ordered by priority
    - Consider both project and task status for context
 
 5. **Organization**:
@@ -209,6 +209,7 @@ When working with this data:
    - Folders typically represent areas of life or responsibility
    - Projects represent outcomes requiring multiple steps
    - Tags provide cross-cutting categorization
+   - Task management generally follows the Getting Things Done methodology
 
 6. **Deep Linking**:
    - Use the `permalink` URLs to reference specific tasks/projects in OmniFocus
