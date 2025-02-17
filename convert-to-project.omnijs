@@ -9,7 +9,7 @@
     "mediumLabel": "Project Converter",
     "longLabel": "Project Converter",
     "paletteLabel": "Project Converter",
-    "image": "arrow.uturn.up"
+    "image": "arrow.up.forward.square"
 }*/
 (() => {
   const action = new PlugIn.Action(async function (selection) {
