@@ -1,29 +1,45 @@
-## OmniAutomation Plugins
+# OmniAutomation Plugins
 
-More details can be found on this absolute monstrosity of a website, if you're able to navigate it: https://omni-automation.com/
+A collection of automation plugins for OmniFocus to enhance productivity and workflow management.
 
-All plugins are in the `/plugins` directory, along with [a more detailed README](./plugins/README.md) for each plugin.
+## Installation
 
-## ChatGPT for Plugin Generation
-
-I've been using this custom GPT for generating plugins. It does a pretty good job! https://chat.openai.com/g/g-1bLam9r4W-omniautomation-assistant
+1. Download the desired `.omnijs` plugin file
+2. Open OmniFocus
+3. Select Automation > Configure from the menu bar
+4. Click the `+` button and select the downloaded plugin file
 
 ## Available Plugins
 
-### convert-to-project
-This automation solves the problem where converting a task to a project puts it in the outermost level of the folder hierarchy. This causes all sorts of issues when focusing on specific folders/contexts.
+### Convert to Project (`convert-to-project.omnijs`)
+A smart task-to-project converter that maintains folder hierarchy and task properties. Features:
+- Preserves task metadata (notes, due dates, defer dates)
+- Intelligent folder selection with customizable defaults
+- Option to create a subtask within the new project
+- Automatically focuses on the newly created project
 
-### export-custom-perspective
-Choose a perspective to export out to a file that, when opened, can be added to another user's OmniFocus installation.
+### Export Custom Perspective (`export-custom-perspective.omnijs`)
+Share your custom perspectives with other OmniFocus users:
+- Export any custom perspective to a file
+- Simple interface for perspective selection
+- Enables perspective sharing and backup
+- Includes perspective configuration and rules
 
-### export-project-taskpaper
-Given a selected project, export a plain-text taskpaper export of the project. In an OmniFocus context, this taskpaper file can be copied, pasted to the inbox, then converted to a project.
+### Export Database to JSON (`export-database-to-json.omnijs`)
+Export your OmniFocus database in a rich JSON format for external processing:
+- Complete hierarchical structure of folders, projects, and tasks
+- Includes perspective data (Inbox, Forecast, custom perspectives)
+- Preserves task metadata and relationships
+- Ideal for data analysis or AI tool integration
 
-### export-database-to-csv
-Export your entire database to your clipboard in CSV format, for use in spreadsheets or basic reporting.
+### Productivity Report (`productivity-report.omnijs`)
+Generate detailed productivity summaries and send them to a webhook:
+- Daily or weekly report options
+- Tracks completed tasks, progressed projects, and due items
+- Separates inbox vs. project task completion
+- Monitors overdue tasks and project completion rates
+- Configurable webhook integration for external processing
 
-### export-database-to-json
-Export your entire database to your clipboard in JSON format, with rich hierarchical structure and perspective data. Ideal for use in AI tools or advanced data analysis.
+## Development
 
-### productivity-report
-Send a summary of your completed work for the last day or week to a webhook.
+More details about OmniAutomation can be found in the [official documentation](https://omni-automation.com/).

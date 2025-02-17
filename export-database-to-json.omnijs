@@ -58,10 +58,10 @@
         /** @param {Task} task @returns {Types.TaskJson | null} */
         const taskToJson = (task) => {
             const effectivelyCompleted = task.effectiveCompletionDate !== null;
-            
+
             // Skip dropped, blocked, or completed tasks
-            if (task.taskStatus === Task.Status.Dropped || 
-                task.taskStatus === Task.Status.Blocked || 
+            if (task.taskStatus === Task.Status.Dropped ||
+                task.taskStatus === Task.Status.Blocked ||
                 effectivelyCompleted) {
                 return null;
             }
@@ -94,7 +94,7 @@
         /** @param {Project} project @returns {Types.ProjectJson | null} */
         const projectToJson = (project) => {
             const effectivelyCompleted = project.effectiveCompletedDate !== null;
-            
+
             // Skip completed or dropped projects
             if (project.status === Project.Status.Done || project.status === Project.Status.Dropped) {
                 return null;
@@ -173,7 +173,7 @@
                 // Walk the tree and collect tasks and projects
                 tree.rootNode.apply(node => {
                     const item = node.object;
-                    
+
                     if (item instanceof Task) {
                         const taskJson = taskToJson(item);
                         if (taskJson) {
@@ -199,29 +199,53 @@
             }
         };
 
+        const perspectives = [
+            {
+                name: "Bad Waiting",
+                perspective: Perspective.Custom.byName("Bad Waiting"),
+                description: "Delegated items without a due date to follow up. Triage immediately."
+            },
+            {
+                name: "No Action",
+                perspective: Perspective.Custom.byName("No Action"),
+                description: "Projects without a next action. Triage immediately."
+            },
+            {
+                name: "Inbox", perspective: Perspective.BuiltIn.Inbox,
+                description: "Unprocessed items awaiting review and organization."
+            },
+            {
+                name: "Forecast",
+                perspective: Perspective.BuiltIn.Forecast,
+                description: "Calendar-aligned view of upcoming deadlines and time-specific tasks."
+            },
+            {
+                name: "Next",
+                perspective: Perspective.Custom.byName("Next"),
+                description: "Available next actions across all projects."
+            },
+        ]
+
         /** @type {Types.DatabaseJson} */
         const output = {
             timestamp: new Date().toISOString(),
             folders: folders.map(folder => folderToJson(folder)),
-            perspectives: {
-                inbox: getPerspectiveData(Perspective.BuiltIn.Inbox),
-                forecast: getPerspectiveData(Perspective.BuiltIn.Forecast),
-                next: getPerspectiveData(Perspective.Custom.byName("Next")),
-                agendas: getPerspectiveData(Perspective.Custom.byName("Agendas")),
-                badWaiting: getPerspectiveData(Perspective.Custom.byName("Bad Waiting")),
-                noAction: getPerspectiveData(Perspective.Custom.byName("No Action"))
-            }
+            perspectives: perspectives.map(({ name, perspective, description }) => ({
+                name,
+                description,
+                items: getPerspectiveData(perspective)
+            }))
         };
 
         // Convert to JSON string with pretty printing
         const jsonString = JSON.stringify(output, null, 2);
-        
+
         // Copy to clipboard
         Pasteboard.general.string = jsonString;
-        
+
         // Show confirmation
         new Alert(
-            "Database Exported", 
+            "Database Exported",
             "The database has been exported to your clipboard in JSON format."
         ).show(() => null);
 

@@ -21,20 +21,26 @@ The export provides a hierarchical view of your OmniFocus database, including:
   folders: FolderJson[],
   
   // Different views/collections of tasks based on OmniFocus perspectives
-  perspectives: {
-    // Tasks marked as "Next" - high priority actions to work on
-    next: TaskJson[] | null,
+  perspectives: Array<{
+    // Name of the perspective
+    name: string,
     
-    // Tasks with upcoming due/defer dates
-    forecast: TaskJson[] | null,
+    // Description of what this perspective represents
+    description: string,
     
-    // Custom perspective exports
-    agendas: TaskJson[] | null,
-    badWaiting: TaskJson[] | null,
-    noAction: TaskJson[] | null
-  }
+    // Tasks/projects in this perspective
+    items: (TaskJson | ProjectJson)[] | null
+  }>
 }
 ```
+
+The perspectives are ordered by priority for triage:
+
+1. **Bad Waiting**: Delegated items without a due date to follow up. Triage immediately.
+2. **No Action**: Projects without a next action. Triage immediately.
+3. **Inbox**: Unprocessed items awaiting review and organization.
+4. **Forecast**: Calendar-aligned view of upcoming deadlines and time-specific tasks.
+5. **Next**: Available next actions across all projects.
 
 ## Task Schema (TaskJson)
 
@@ -201,5 +207,3 @@ When working with this data:
 6. **Deep Linking**:
    - Use the `permalink` URLs to reference specific tasks/projects in OmniFocus
    - Links follow format: `omnifocus:///task/[id]`
-
-Would you like me to add any additional sections or clarify any particular aspects of the schema? 
