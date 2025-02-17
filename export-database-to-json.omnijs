@@ -211,7 +211,8 @@
                 description: "Projects without a next action. Triage immediately."
             },
             {
-                name: "Inbox", perspective: Perspective.BuiltIn.Inbox,
+                name: "Inbox",
+                perspective: Perspective.BuiltIn.Inbox,
                 description: "Unprocessed items awaiting review and organization."
             },
             {
