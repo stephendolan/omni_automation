@@ -15,7 +15,7 @@
 /// <reference path="./types/database-export.d.ts" />
 
 (() => {
-    let action = new PlugIn.Action(function (selection, sender) {
+    let action = new PlugIn.Action(function (_selection, _sender) {
         /** @param {Date | null} date */
         const formatDate = (date) => {
             return date ? date.toISOString() : null;
@@ -55,16 +55,18 @@
             return "Unknown";
         };
 
+        /** @param {Task} task @returns {boolean} */
+        const shouldSkipTask = (task) => {
+            return task.taskStatus === Task.Status.Dropped ||
+                task.taskStatus === Task.Status.Blocked ||
+                task.effectiveCompletionDate !== null;
+        }
+
         /** @param {Task} task @returns {Types.TaskJson | null} */
         const taskToJson = (task) => {
             const effectivelyCompleted = task.effectiveCompletionDate !== null;
 
-            // Skip dropped, blocked, or completed tasks
-            if (task.taskStatus === Task.Status.Dropped ||
-                task.taskStatus === Task.Status.Blocked ||
-                effectivelyCompleted) {
-                return null;
-            }
+            if (shouldSkipTask(task)) { return null; }
 
             return {
                 id: task.id.primaryKey,
@@ -87,18 +89,24 @@
                 } : null,
                 children: task.children
                     .map(child => taskToJson(child))
-                    .filter(child => child !== null)
+                    .filter(child => child !== null),
+                projectName: task.containingProject ? task.containingProject.name : null,
+                folderName: task.containingProject?.parentFolder?.name || null
             };
         };
+
+        /** @param {Project} project @returns {boolean} */
+        const shouldSkipProject = (project) => {
+            return project.status === Project.Status.Done ||
+                project.effectiveCompletedDate !== null ||
+                project.status === Project.Status.Dropped;
+        }
 
         /** @param {Project} project @returns {Types.ProjectJson | null} */
         const projectToJson = (project) => {
             const effectivelyCompleted = project.effectiveCompletedDate !== null;
 
-            // Skip completed or dropped projects
-            if (project.status === Project.Status.Done || project.status === Project.Status.Dropped) {
-                return null;
-            }
+            if (shouldSkipProject(project)) { return null; }
 
             const tasks = project.tasks
                 .map(task => taskToJson(task))
@@ -117,7 +125,8 @@
                 flagged: project.flagged,
                 notes: project.note,
                 sequential: project.sequential,
-                tasks: tasks
+                tasks: tasks,
+                folderName: project.parentFolder ? project.parentFolder.name : null
             };
         };
 
@@ -125,7 +134,7 @@
         const folderToJson = (folder) => {
             const projects = folder.projects
                 .map(project => projectToJson(project))
-                .filter(project => project !== null); // Filter out null projects
+                .filter(project => project !== null);
 
             const folders = folder.folders
                 .map(subfolder => folderToJson(subfolder))
@@ -137,14 +146,6 @@
                 type: 'Folder',
                 folders: folders,
                 projects: projects
-            };
-        };
-
-        /** @param {Tag} tag @returns {Types.ContextJson} */
-        const tagToJson = (tag) => {
-            return {
-                id: tag.id.primaryKey,
-                name: tag.name,
             };
         };
 
@@ -177,16 +178,11 @@
                     if (item instanceof Task) {
                         const taskJson = taskToJson(item);
                         if (taskJson) {
-                            // Add containing project/folder info for perspective items
-                            taskJson.projectName = item.containingProject ? item.containingProject.name : null;
-                            taskJson.folderName = item.containingProject?.parentFolder?.name || null;
                             items.push(taskJson);
                         }
                     } else if (item instanceof Project) {
                         const projectJson = projectToJson(item);
                         if (projectJson) {
-                            // Add containing folder info for perspective items
-                            projectJson.folderName = item.parentFolder ? item.parentFolder.name : null;
                             items.push(projectJson);
                         }
                     }
@@ -253,7 +249,7 @@
         console.log("Export completed successfully");
     });
 
-    action.validate = function (selection, sender) {
+    action.validate = function (_selection, _sender) {
         return true;
     };
 
