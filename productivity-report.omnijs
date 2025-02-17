@@ -33,17 +33,17 @@
 
   function getDaySuffix(day) {
     if (day >= 11 && day <= 13) {
-      return 'th';
+      return "th";
     }
     switch (day % 10) {
       case 1:
-        return 'st';
+        return "st";
       case 2:
-        return 'nd';
+        return "nd";
       case 3:
-        return 'rd';
+        return "rd";
       default:
-        return 'th';
+        return "th";
     }
   }
 
@@ -71,7 +71,7 @@
   // Function to format the date to YYYY-MM-DD
   function formatDate(date) {
     var d = new Date(date),
-      month = d.toLocaleString('default', { month: 'long' }),
+      month = d.toLocaleString("default", { month: "long" }),
       day = d.getDate(),
       suffix = getDaySuffix(day),
       year = d.getFullYear();
@@ -102,7 +102,7 @@
     }
 
     // Filter tasks based on the date range
-    let completedTasks = flattenedTasks.filter(task => {
+    let completedTasks = flattenedTasks.filter((task) => {
       let isDropped = task.effectiveDropDate != null;
       let isCompleted = task.effectiveCompletionDate != null;
 
@@ -110,15 +110,15 @@
     });
 
     // Count tasks with no project (Inbox tasks)
-    let inboxTasksCount = completedTasks.filter(task => !task.containingProject).length;
+    let inboxTasksCount = completedTasks.filter((task) => !task.containingProject).length;
 
     // Count tasks with a project
     let projectTasksCount = completedTasks.length - inboxTasksCount;
 
     // Determine progressed projects and mark completed ones
     let progressedProjects = [];
-    let completedProjects = []
-    completedTasks.forEach(task => {
+    let completedProjects = [];
+    completedTasks.forEach((task) => {
       const project = task.containingProject;
 
       if (project === null) {
@@ -138,10 +138,10 @@
     completedProjects = new Set(completedProjects.sort());
 
     // Tasks with due dates completed during the selected period
-    let dueTasksCount = completedTasks.filter(task => task.dueDate).length;
+    let dueTasksCount = completedTasks.filter((task) => task.dueDate).length;
 
     // Tasks with due dates that weren't finished during the selected period
-    let unfinishedDueTasks = flattenedTasks.filter(task => {
+    let unfinishedDueTasks = flattenedTasks.filter((task) => {
       let isDropped = task.effectiveDropDate != null;
       let isCompleted = task.effectiveCompletionDate != null;
 
@@ -157,41 +157,36 @@
       progressedProjects: [...progressedProjects],
       completedProjects: [...completedProjects],
       completedTasksWithDueDates: dueTasksCount,
-      unfinishedTasksWithTodaysDueDate: unfinishedDueTasks.length
+      unfinishedTasksWithTodaysDueDate: unfinishedDueTasks.length,
     };
 
     // Creating a Fetch Request
-    retrieveOrRequestWebhookUrl().then(webhookUrl => {
-      let request = URL.FetchRequest.fromString(webhookUrl);
-      request.method = 'POST';
-      request.bodyString = JSON.stringify(data);
-      request.headers = { 'Content-Type': 'application/json' };
+    retrieveOrRequestWebhookUrl()
+      .then((webhookUrl) => {
+        let request = URL.FetchRequest.fromString(webhookUrl);
+        request.method = "POST";
+        request.bodyString = JSON.stringify(data);
+        request.headers = { "Content-Type": "application/json" };
 
-      console.log(`Sending request to ${webhookUrl} with data: ${request.bodyString}...`)
+        console.log(`Sending request to ${webhookUrl} with data: ${request.bodyString}...`);
 
-      // Submit the request
-      // Because it's a webhook, we'll know pretty immediately if it doesn't work.
-      request.fetch();
-    }).catch(error => {
-      console.error("Error handling webhook URL:", error);
-    });
-
+        // Submit the request
+        // Because it's a webhook, we'll know pretty immediately if it doesn't work.
+        request.fetch();
+      })
+      .catch((error) => {
+        console.error("Error handling webhook URL:", error);
+      });
   }
 
   var action = new PlugIn.Action(function (selection, sender) {
     if (sender) {
       // Create a new Form
       let form = new Form();
-      let summaryTypeField = new Form.Field.Option(
-        "summaryType",
-        "Summary Type",
-        ["Daily", "Weekly"],
-        null,
-        "Daily"
-      );
+      let summaryTypeField = new Form.Field.Option("summaryType", "Summary Type", ["Daily", "Weekly"], null, "Daily");
       form.addField(summaryTypeField);
 
-      form.show("Choose Summary Type", "Continue").then(form => {
+      form.show("Choose Summary Type", "Continue").then((form) => {
         let summaryType = form.values["summaryType"];
         generateReport(summaryType);
       });

@@ -15,259 +15,261 @@
 /// <reference path="./types/database-export.d.ts" />
 
 (() => {
-    let action = new PlugIn.Action(function (_selection, _sender) {
-        /** @param {Date | null} date */
-        const formatDate = (date) => {
-            return date ? date.toISOString() : null;
-        };
-
-        /** @param {Task.Status} status */
-        const getTaskStatusString = (status) => {
-            if (status === Task.Status.Active) return "Active";
-            if (status === Task.Status.Blocked) return "Blocked";
-            if (status === Task.Status.Dropped) return "Dropped";
-            if (status === Task.Status.Completed) return "Completed";
-            if (status === Task.Status.Next) return "Next";
-            if (status === Task.Status.Available) return "Available";
-            if (status === Task.Status.DueSoon) return "DueSoon";
-            return "Unknown";
-        };
-
-        /** @param {Project.Status} status */
-        const getProjectStatusString = (status) => {
-            if (status === Project.Status.Active) return "Active";
-            if (status === Project.Status.Done) return "Done";
-            if (status === Project.Status.Dropped) return "Dropped";
-            if (status === Project.Status.OnHold) return "OnHold";
-            return "Unknown";
-        };
-
-        /** @param {Task | Project} object */
-        const getPermalink = (object) => {
-            return `omnifocus:///task/${object.id.primaryKey}`;
-        };
-
-        /** @param {Task.RepetitionMethod} method */
-        const getRepetitionMethodString = (method) => {
-            if (method === Task.RepetitionMethod.Fixed) return "Fixed";
-            if (method === Task.RepetitionMethod.Start) return "Start";
-            if (method === Task.RepetitionMethod.Due) return "Due";
-            return "Unknown";
-        };
-
-        /** @param {Task} task @returns {boolean} */
-        const shouldSkipTask = (task) => {
-            return task.taskStatus === Task.Status.Dropped ||
-                task.taskStatus === Task.Status.Blocked ||
-                task.effectiveCompletionDate !== null;
-        }
-
-        /** @param {Task} task @returns {Types.TaskJson | null} */
-        const taskToJson = (task) => {
-            const effectivelyCompleted = task.effectiveCompletionDate !== null;
-
-            if (shouldSkipTask(task)) { return null; }
-
-            return {
-                id: task.id.primaryKey,
-                name: task.name,
-                type: 'Task',
-                status: getTaskStatusString(task.taskStatus),
-                permalink: getPermalink(task),
-                completed: effectivelyCompleted,
-                completionDate: formatDate(task.effectiveCompletionDate),
-                dueDate: formatDate(task.effectiveDueDate),
-                deferDate: formatDate(task.effectiveDeferDate),
-                flagged: task.flagged,
-                notes: task.note,
-                tags: task.tags.map(tag => tag.name),
-                estimatedMinutes: task.estimatedMinutes,
-                sequential: task.sequential,
-                repetitionRule: task.repetitionRule ? {
-                    method: getRepetitionMethodString(task.repetitionRule.method),
-                    rule: task.repetitionRule.ruleString
-                } : null,
-                children: task.children
-                    .map(child => taskToJson(child))
-                    .filter(child => child !== null),
-                projectName: task.containingProject ? task.containingProject.name : null,
-                folderName: task.containingProject?.parentFolder?.name || null
-            };
-        };
-
-        /** @param {Project} project @returns {boolean} */
-        const shouldSkipProject = (project) => {
-            return project.status === Project.Status.Done ||
-                project.effectiveCompletedDate !== null ||
-                project.status === Project.Status.Dropped;
-        }
-
-        /** @param {Project} project @returns {Types.ProjectJson | null} */
-        const projectToJson = (project) => {
-            const effectivelyCompleted = project.effectiveCompletedDate !== null;
-
-            if (shouldSkipProject(project)) { return null; }
-
-            const tasks = project.tasks
-                .map(task => taskToJson(task))
-                .filter(task => task !== null);
-
-            return {
-                id: project.id.primaryKey,
-                name: project.name,
-                type: 'Project',
-                status: getProjectStatusString(project.status),
-                permalink: getPermalink(project),
-                completed: effectivelyCompleted,
-                completionDate: formatDate(project.effectiveCompletedDate),
-                deferDate: formatDate(project.deferDate),
-                dueDate: formatDate(project.dueDate),
-                flagged: project.flagged,
-                notes: project.note,
-                sequential: project.sequential,
-                tasks: tasks,
-                folderName: project.parentFolder ? project.parentFolder.name : null
-            };
-        };
-
-        /** @param {Folder} folder @returns {boolean} */
-        const folderIsNotEmpty = (folder) => {
-            // Check immediate projects and subfolders
-            const hasDirectContent = folder.projects.length > 0 || folder.folders.length > 0;
-            
-            // Check if any subfolders have content
-            const hasSubfolderContent = folder.flattenedFolders.some(subfolder => 
-                subfolder.projects.length > 0
-            );
-
-            return hasDirectContent || hasSubfolderContent;
-        };
-
-        /** @param {Folder} folder @returns {boolean} */
-        const shouldSkipFolder = (folder) => {
-            return folder.status === Folder.Status.Dropped && folderIsNotEmpty(folder);
-        }
-
-        /** @param {Folder} folder @returns {Types.FolderJson} */
-        const folderToJson = (folder) => {
-            if (shouldSkipFolder(folder)) { return null; }
-
-            const projects = folder.projects
-                .map(project => projectToJson(project))
-                .filter(project => project !== null);
-
-            return {
-                id: folder.id.primaryKey,
-                name: folder.name,
-                type: 'Folder',
-                folders: folders,
-                projects: projects
-            };
-        };
-
-        /** @param {Perspective.BuiltIn | Perspective.Custom} perspective @returns {(Types.TaskJson | Types.ProjectJson | Types.ContextJson)[] | null} */
-        const getPerspectiveData = (perspective) => {
-            try {
-                // Get the first window
-                const window = document.windows[0];
-                if (!window) {
-                    console.error("No window available");
-                    return null;
-                }
-
-                // Set the perspective
-                window.perspective = perspective;
-
-                // Get the content tree
-                const tree = window.content;
-                if (!tree) {
-                    console.error("No content tree available");
-                    return null;
-                }
-
-                const items = [];
-
-                // Walk the tree and collect tasks and projects
-                tree.rootNode.apply(node => {
-                    const item = node.object;
-
-                    if (item instanceof Task) {
-                        const taskJson = taskToJson(item);
-                        if (taskJson) {
-                            items.push(taskJson);
-                        }
-                    } else if (item instanceof Project) {
-                        const projectJson = projectToJson(item);
-                        if (projectJson) {
-                            items.push(projectJson);
-                        }
-                    }
-                });
-
-                return items;
-            } catch (error) {
-                console.error(`Error getting perspective ${perspective.name}:`, error);
-                return null;
-            }
-        };
-
-        const perspectives = [
-            {
-                name: "Bad Waiting",
-                perspective: Perspective.Custom.byName("Bad Waiting"),
-                description: "Delegated items without a due date to follow up. Triage immediately."
-            },
-            {
-                name: "No Action",
-                perspective: Perspective.Custom.byName("No Action"),
-                description: "Projects without a next action. Triage immediately."
-            },
-            {
-                name: "Inbox",
-                perspective: Perspective.BuiltIn.Inbox,
-                description: "Unprocessed items awaiting review and organization."
-            },
-            {
-                name: "Forecast",
-                perspective: Perspective.BuiltIn.Forecast,
-                description: "Calendar-aligned view of upcoming deadlines and time-specific tasks."
-            },
-            {
-                name: "Next",
-                perspective: Perspective.Custom.byName("Next"),
-                description: "Available next actions across all projects."
-            },
-        ]
-
-        /** @type {Types.DatabaseJson} */
-        const output = {
-            timestamp: new Date().toISOString(),
-            folders: folders.map(folder => folderToJson(folder)),
-            perspectives: perspectives.map(({ name, perspective, description }) => ({
-                name,
-                description,
-                items: getPerspectiveData(perspective)
-            }))
-        };
-
-        // Convert to JSON string with pretty printing
-        const jsonString = JSON.stringify(output, null, 2);
-
-        // Copy to clipboard
-        Pasteboard.general.string = jsonString;
-
-        // Show confirmation
-        new Alert(
-            "Database Exported",
-            "The database has been exported to your clipboard in JSON format."
-        ).show(() => null);
-
-        console.log("Export completed successfully");
-    });
-
-    action.validate = function (_selection, _sender) {
-        return true;
+  let action = new PlugIn.Action(function (_selection, _sender) {
+    /** @param {Date | null} date */
+    const formatDate = (date) => {
+      return date ? date.toISOString() : null;
     };
 
-    return action;
-})(); 
+    /** @param {Task.Status} status */
+    const getTaskStatusString = (status) => {
+      if (status === Task.Status.Active) return "Active";
+      if (status === Task.Status.Blocked) return "Blocked";
+      if (status === Task.Status.Dropped) return "Dropped";
+      if (status === Task.Status.Completed) return "Completed";
+      if (status === Task.Status.Next) return "Next";
+      if (status === Task.Status.Available) return "Available";
+      if (status === Task.Status.DueSoon) return "DueSoon";
+      return "Unknown";
+    };
+
+    /** @param {Project.Status} status */
+    const getProjectStatusString = (status) => {
+      if (status === Project.Status.Active) return "Active";
+      if (status === Project.Status.Done) return "Done";
+      if (status === Project.Status.Dropped) return "Dropped";
+      if (status === Project.Status.OnHold) return "OnHold";
+      return "Unknown";
+    };
+
+    /** @param {Folder.Status} status */
+    const getFolderStatusString = (status) => {
+      if (status === Folder.Status.Active) return "Active";
+      if (status === Folder.Status.Dropped) return "Dropped";
+      return "Unknown";
+    };
+
+    /** @param {Task | Project} object */
+    const getPermalink = (object) => {
+      return `omnifocus:///task/${object.id.primaryKey}`;
+    };
+
+    /** @param {Task.RepetitionMethod} method */
+    const getRepetitionMethodString = (method) => {
+      if (method === Task.RepetitionMethod.Fixed) return "Fixed";
+      if (method === Task.RepetitionMethod.Start) return "Start";
+      if (method === Task.RepetitionMethod.Due) return "Due";
+      return "Unknown";
+    };
+
+    /** @param {Task} task @returns {boolean} */
+    const shouldSkipTask = (task) => {
+      return task.taskStatus === Task.Status.Dropped || task.taskStatus === Task.Status.Blocked || task.effectiveCompletionDate !== null;
+    };
+
+    /** @param {Task} task @returns {Types.TaskJson | null} */
+    const taskToJson = (task) => {
+      const effectivelyCompleted = task.effectiveCompletionDate !== null;
+
+      if (shouldSkipTask(task)) {
+        return null;
+      }
+
+      return {
+        id: task.id.primaryKey,
+        name: task.name,
+        type: "Task",
+        status: getTaskStatusString(task.taskStatus),
+        permalink: getPermalink(task),
+        completed: effectivelyCompleted,
+        completionDate: formatDate(task.effectiveCompletionDate),
+        dueDate: formatDate(task.effectiveDueDate),
+        deferDate: formatDate(task.effectiveDeferDate),
+        flagged: task.flagged,
+        notes: task.note,
+        tags: task.tags.map((tag) => tag.name),
+        estimatedMinutes: task.estimatedMinutes,
+        sequential: task.sequential,
+        repetitionRule: task.repetitionRule
+          ? {
+              method: getRepetitionMethodString(task.repetitionRule.method),
+              rule: task.repetitionRule.ruleString,
+            }
+          : null,
+        children: task.children.map((child) => taskToJson(child)).filter((child) => child !== null),
+        projectName: task.containingProject ? task.containingProject.name : null,
+        folderName: task.containingProject?.parentFolder?.name || null,
+      };
+    };
+
+    /** @param {Project} project @returns {boolean} */
+    const shouldSkipProject = (project) => {
+      return (
+        project.status === Project.Status.Done ||
+        project.effectiveCompletedDate !== null ||
+        project.status === Project.Status.OnHold ||
+        project.status === Project.Status.Dropped
+      );
+    };
+
+    /** @param {Project} project @returns {Types.ProjectJson | null} */
+    const projectToJson = (project) => {
+      const effectivelyCompleted = project.effectiveCompletedDate !== null;
+
+      if (shouldSkipProject(project)) {
+        return null;
+      }
+
+      const tasks = project.tasks.map((task) => taskToJson(task)).filter((task) => task !== null);
+
+      return {
+        id: project.id.primaryKey,
+        name: project.name,
+        type: "Project",
+        status: getProjectStatusString(project.status),
+        permalink: getPermalink(project),
+        completed: effectivelyCompleted,
+        completionDate: formatDate(project.effectiveCompletedDate),
+        deferDate: formatDate(project.deferDate),
+        dueDate: formatDate(project.dueDate),
+        flagged: project.flagged,
+        notes: project.note,
+        sequential: project.sequential,
+        tasks: tasks,
+        folderName: project.parentFolder ? project.parentFolder.name : null,
+      };
+    };
+
+    /**
+     * @param {Folder} folder The folder to check
+     * @param {Project[]} projects The folder's projects
+     * @param {Folder[]} subfolders The folder's subfolders
+     * @returns {boolean} Whether the folder should be skipped
+     */
+    const shouldSkipFolder = (folder, projects, subfolders) => {
+      return folder.status === Folder.Status.Dropped || (projects.length === 0 && subfolders.length === 0);
+    };
+
+    /** @param {Folder} folder @returns {Types.FolderJson} */
+    const folderToJson = (folder) => {
+      const projects = folder.projects.map((project) => projectToJson(project)).filter((project) => project !== null);
+
+      const subfolders = folder.folders.map((subfolder) => folderToJson(subfolder)).filter((subfolder) => subfolder !== null);
+
+      if (shouldSkipFolder(folder, projects, subfolders)) {
+        return null;
+      }
+
+      return {
+        id: folder.id.primaryKey,
+        name: folder.name,
+        status: getFolderStatusString(folder.status),
+        type: "Folder",
+        folders: subfolders,
+        projects: projects,
+      };
+    };
+
+    /** @param {Perspective.BuiltIn | Perspective.Custom} perspective @returns {(Types.TaskJson | Types.ProjectJson | Types.ContextJson)[] | null} */
+    const getPerspectiveData = (perspective) => {
+      try {
+        // Get the first window
+        const window = document.windows[0];
+        if (!window) {
+          console.error("No window available");
+          return null;
+        }
+
+        // Set the perspective
+        window.perspective = perspective;
+
+        // Get the content tree
+        const tree = window.content;
+        if (!tree) {
+          console.error("No content tree available");
+          return null;
+        }
+
+        const items = [];
+
+        // Walk the tree and collect tasks and projects
+        tree.rootNode.apply((node) => {
+          const item = node.object;
+
+          if (item instanceof Task) {
+            const taskJson = taskToJson(item);
+            if (taskJson) {
+              items.push(taskJson);
+            }
+          } else if (item instanceof Project) {
+            const projectJson = projectToJson(item);
+            if (projectJson) {
+              items.push(projectJson);
+            }
+          }
+        });
+
+        return items;
+      } catch (error) {
+        console.error(`Error getting perspective ${perspective.name}:`, error);
+        return null;
+      }
+    };
+
+    const perspectives = [
+      {
+        name: "Bad Waiting",
+        perspective: Perspective.Custom.byName("Bad Waiting"),
+        description: "Delegated items without a due date to follow up. Triage immediately.",
+      },
+      {
+        name: "No Action",
+        perspective: Perspective.Custom.byName("No Action"),
+        description: "Projects without a next action. Triage immediately.",
+      },
+      {
+        name: "Inbox",
+        perspective: Perspective.BuiltIn.Inbox,
+        description: "Unprocessed items awaiting review and organization.",
+      },
+      {
+        name: "Forecast",
+        perspective: Perspective.BuiltIn.Forecast,
+        description: "Calendar-aligned view of upcoming deadlines and time-specific tasks.",
+      },
+      {
+        name: "Next",
+        perspective: Perspective.Custom.byName("Next"),
+        description: "Available next actions across all projects.",
+      },
+    ];
+
+    /** @type {Types.DatabaseJson} */
+    const output = {
+      timestamp: new Date().toISOString(),
+      perspectives: perspectives.map(({ name, perspective, description }) => ({
+        name,
+        description,
+        items: getPerspectiveData(perspective),
+      })),
+      folders: folders.map((folder) => folderToJson(folder)).filter((folder) => folder !== null),
+    };
+
+    // Convert to JSON string with pretty printing
+    const jsonString = JSON.stringify(output, null, 2);
+
+    // Copy to clipboard
+    Pasteboard.general.string = jsonString;
+
+    // Show confirmation
+    new Alert("Database Exported", "The database has been exported to your clipboard in JSON format.").show(() => null);
+
+    console.log("Export completed successfully");
+  });
+
+  action.validate = function (_selection, _sender) {
+    return true;
+  };
+
+  return action;
+})();

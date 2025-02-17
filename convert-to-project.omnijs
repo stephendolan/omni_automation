@@ -18,14 +18,10 @@
 
     const form = new Form();
     form.title = "Create Project";
-    form.addField(
-      new Form.Field.String("projectTitle", "Project Title", selectedTask.name)
-    );
+    form.addField(new Form.Field.String("projectTitle", "Project Title", selectedTask.name));
 
     // Retrieve and format top-level and second-level folders, excluding dropped folders
-    const topLevelFolders = flattenedFolders.filter(
-      (folder) => !folder.parent && folder.status !== Folder.Status.Dropped
-    );
+    const topLevelFolders = flattenedFolders.filter((folder) => !folder.parent && folder.status !== Folder.Status.Dropped);
     let folderNames = [];
 
     topLevelFolders.forEach((folder) => {
@@ -40,48 +36,24 @@
     const defaultFolderStart = "Tuple : Ops";
     const prioritizedFolder = "Tuple";
     folderNames.sort((a, b) => {
-      if (
-        a.startsWith(defaultFolderStart) &&
-        !b.startsWith(defaultFolderStart)
-      ) {
+      if (a.startsWith(defaultFolderStart) && !b.startsWith(defaultFolderStart)) {
         return -1;
-      } else if (
-        !a.startsWith(defaultFolderStart) &&
-        b.startsWith(defaultFolderStart)
-      ) {
+      } else if (!a.startsWith(defaultFolderStart) && b.startsWith(defaultFolderStart)) {
         return 1;
-      } else if (
-        a.startsWith(prioritizedFolder) &&
-        !b.startsWith(prioritizedFolder)
-      ) {
+      } else if (a.startsWith(prioritizedFolder) && !b.startsWith(prioritizedFolder)) {
         return -1;
-      } else if (
-        !a.startsWith(prioritizedFolder) &&
-        b.startsWith(prioritizedFolder)
-      ) {
+      } else if (!a.startsWith(prioritizedFolder) && b.startsWith(prioritizedFolder)) {
         return 1;
       } else {
         return a.localeCompare(b);
       }
     });
 
-    form.addField(
-      new Form.Field.Option(
-        "folderName",
-        "Folder",
-        folderNames,
-        null,
-        folderNames[0]
-      )
-    );
+    form.addField(new Form.Field.Option("folderName", "Folder", folderNames, null, folderNames[0]));
 
     if (!hasChildren) {
-      form.addField(
-        new Form.Field.Checkbox("addToProject", "Add task to project?", true)
-      );
-      form.addField(
-        new Form.Field.String("newTaskTitle", "Task Title", selectedTask.name)
-      );
+      form.addField(new Form.Field.Checkbox("addToProject", "Add task to project?", true));
+      form.addField(new Form.Field.String("newTaskTitle", "Task Title", selectedTask.name));
     }
 
     const formPrompt = "Configure your project:";
