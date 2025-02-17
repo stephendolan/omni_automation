@@ -130,15 +130,31 @@
             };
         };
 
+        /** @param {Folder} folder @returns {boolean} */
+        const folderIsNotEmpty = (folder) => {
+            // Check immediate projects and subfolders
+            const hasDirectContent = folder.projects.length > 0 || folder.folders.length > 0;
+            
+            // Check if any subfolders have content
+            const hasSubfolderContent = folder.flattenedFolders.some(subfolder => 
+                subfolder.projects.length > 0
+            );
+
+            return hasDirectContent || hasSubfolderContent;
+        };
+
+        /** @param {Folder} folder @returns {boolean} */
+        const shouldSkipFolder = (folder) => {
+            return folder.status === Folder.Status.Dropped && folderIsNotEmpty(folder);
+        }
+
         /** @param {Folder} folder @returns {Types.FolderJson} */
         const folderToJson = (folder) => {
+            if (shouldSkipFolder(folder)) { return null; }
+
             const projects = folder.projects
                 .map(project => projectToJson(project))
                 .filter(project => project !== null);
-
-            const folders = folder.folders
-                .map(subfolder => folderToJson(subfolder))
-                .filter(subfolder => subfolder.projects.length > 0 || subfolder.folders.length > 0); // Only include non-empty folders
 
             return {
                 id: folder.id.primaryKey,
