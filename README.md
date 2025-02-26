@@ -4,10 +4,12 @@ A collection of automation plugins for OmniFocus to enhance productivity and wor
 
 ## Installation
 
-1. Download the desired `.omnijs` plugin file
+1. Go to the [Releases page](https://github.com/stephendolan/omni_automation/releases) and download the latest `.omnijs` plugin files
 2. Open OmniFocus
 3. Select Automation > Configure from the menu bar
 4. Click the `+` button and select the downloaded plugin file
+
+You can also clone this repository and build the plugins yourself by running `npm run build`.
 
 ## Available Plugins
 
@@ -58,9 +60,7 @@ This repository uses TypeScript for plugin development. The TypeScript code is c
 
 - `src/plugins/`: Contains the TypeScript source code for the plugins
 - `src/types/`: Contains TypeScript type definitions
-- `dist/`: Contains the compiled JavaScript files (generated)
 - `scripts/`: Contains build scripts
-- `*.omnijs`: The final plugin files (generated, gitignored)
 
 #### Development Workflow
 
@@ -68,17 +68,6 @@ This repository uses TypeScript for plugin development. The TypeScript code is c
 2. Use the type definitions in `src/types/` for OmniFocus API
 3. Run `npm run build` to compile the TypeScript code and generate the `.omnijs` files
 4. The generated `.omnijs` files will be placed in the root directory
-
-#### Build Process
-
-The build process consists of two steps:
-
-1. TypeScript compilation: `tsc` compiles the TypeScript code to JavaScript
-2. Post-build processing: `scripts/post-build.js` converts the compiled JavaScript to `.omnijs` files
-
-#### Type Definitions
-
-Type definitions are automatically included from the `src/types/` directory thanks to the `typeRoots` configuration in `tsconfig.json`. This means you don't need to use triple-slash reference directives (`/// <reference path="..." />`) in your TypeScript files.
 
 #### Commands
 
