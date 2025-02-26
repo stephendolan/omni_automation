@@ -50,4 +50,45 @@ Generate detailed productivity summaries and send them to a webhook:
 
 ## Development
 
+### TypeScript Setup
+
+This repository uses TypeScript for plugin development. The TypeScript code is compiled to JavaScript and then converted to `.omnijs` files that can be used by OmniFocus.
+
+#### Directory Structure
+
+- `src/plugins/`: Contains the TypeScript source code for the plugins
+- `src/types/`: Contains TypeScript type definitions
+- `dist/`: Contains the compiled JavaScript files (generated)
+- `scripts/`: Contains build scripts
+- `*.omnijs`: The final plugin files (generated, gitignored)
+
+#### Development Workflow
+
+1. Write your TypeScript code in the `src/plugins/` directory
+2. Use the type definitions in `src/types/` for OmniFocus API
+3. Run `npm run build` to compile the TypeScript code and generate the `.omnijs` files
+4. The generated `.omnijs` files will be placed in the root directory
+
+#### Build Process
+
+The build process consists of two steps:
+
+1. TypeScript compilation: `tsc` compiles the TypeScript code to JavaScript
+2. Post-build processing: `scripts/post-build.js` converts the compiled JavaScript to `.omnijs` files
+
+#### Type Definitions
+
+Type definitions are automatically included from the `src/types/` directory thanks to the `typeRoots` configuration in `tsconfig.json`. This means you don't need to use triple-slash reference directives (`/// <reference path="..." />`) in your TypeScript files.
+
+#### Commands
+
+- `npm run build`: Build the plugins
+- `npm run clean`: Remove all generated `.omnijs` files
+
+#### Adding a New Plugin
+
+1. Create a new TypeScript file in `src/plugins/`
+2. Add any necessary type definitions in `src/types/`
+3. Run `npm run build` to generate the `.omnijs` file
+
 More details about OmniAutomation can be found in the [official documentation](https://omni-automation.com/).

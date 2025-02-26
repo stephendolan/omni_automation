@@ -1,6 +1,7 @@
 declare namespace ProductivityReport {
   interface FormValues {
     summaryType: string;
+    webhookUrl?: string;
   }
 
   interface FormObject {
@@ -17,4 +18,16 @@ declare namespace ProductivityReport {
     completedTasksWithDueDates: number;
     unfinishedTasksWithTodaysDueDate: number;
   }
+}
+
+// Extend the global URL namespace to include FetchRequest
+interface URL {
+  FetchRequest: {
+    fromString(url: string): any;
+  };
+}
+
+// Extend the Credential type
+interface Credential {
+  password: string;
 } 

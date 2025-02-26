@@ -11,47 +11,30 @@
     "image": "arrow.up.doc"
 }*/
 
-/// <reference path="./types/omnifocus.d.ts" />
-/// <reference path="./types/productivity-report.d.ts" />
-
 (() => {
-  /** @type {string} */
   const webhookService = "com.omnifocus.assistant.webhook";
-  /** @type {Credentials} */
   const credentials = new Credentials();
 
-  /**
-   * Retrieves the webhook URL from credentials or requests it from the user
-   * @returns {Promise<string>} The webhook URL
-   */
-  async function retrieveOrRequestWebhookUrl() {
-    /** @type {Credential | null} */
+  async function retrieveOrRequestWebhookUrl(): Promise<string> {
     const credential = await credentials.read(webhookService);
     if (!credential) {
-      /** @type {Form} */
       const inputForm = new Form();
-      /** @type {Form.Field.String} */
-      const webhookField = new Form.Field.String("webhookUrl", "Webhook URL", "");
-      inputForm.addField(webhookField);
-      /** @type {string} */
+      const webhookField = new Form.Field.String("webhookUrl", "Webhook URL", "", null);
+      inputForm.addField(webhookField, null);
       const formPrompt = "Enter Webhook URL where results should be sent:";
-      /** @type {{values: {webhookUrl: string}}} */
-      const formObject = await inputForm.show(formPrompt, "Continue");
-      /** @type {string} */
+      const formObject = (await inputForm.show(formPrompt, "Continue")) as any as ProductivityReport.FormObject;
       const webhookUrl = formObject.values["webhookUrl"];
-      await credentials.write(webhookService, "user", webhookUrl);
-      return webhookUrl;
+      if (webhookUrl) {
+        await credentials.write(webhookService, "user", webhookUrl);
+        return webhookUrl;
+      }
+      return "";
     } else {
-      return credential.password;
+      return (credential as Credential).password;
     }
   }
 
-  /**
-   * Gets the appropriate suffix for a day number
-   * @param {number} day - The day of the month
-   * @returns {string} The suffix for the day
-   */
-  function getDaySuffix(day) {
+  function getDaySuffix(day: number): string {
     if (day >= 11 && day <= 13) {
       return "th";
     }
@@ -67,15 +50,8 @@
     }
   }
 
-  /**
-   * Gets the full project path, including all parent folders
-   * @param {Project} project - The project
-   * @returns {string} The full project path
-   */
-  function fullProjectPath(project) {
-    /** @type {string} */
+  function fullProjectPath(project: Project): string {
     let path = project.name;
-    /** @type {Folder | null} */
     let parent = project.parentFolder;
 
     while (parent) {
@@ -86,104 +62,69 @@
     return path;
   }
 
-  /**
-   * Gets the start date of the current week (Monday)
-   * @param {Date} date - The reference date
-   * @returns {Date} The start date of the week
-   */
-  function getWeekStartDate(date) {
-    /** @type {Date} */
+  function getWeekStartDate(date: Date): Date {
     const d = new Date(date);
-    /** @type {number} */
     const day = d.getDay();
-    /** @type {number} */
     const diff = d.getDate() - day + (day == 0 ? -6 : 1); // Adjust if day is Sunday
     return new Date(d.setDate(diff));
   }
 
-  /**
-   * Formats a date to a readable string
-   * @param {Date} date - The date to format
-   * @returns {string} The formatted date string
-   */
-  function formatDate(date) {
-    /** @type {Date} */
+  function formatDate(date: Date): string {
     const d = new Date(date);
-    /** @type {string} */
     const month = d.toLocaleString("default", { month: "long" });
-    /** @type {number} */
     const day = d.getDate();
-    /** @type {string} */
     const suffix = getDaySuffix(day);
-    /** @type {number} */
-    const year = d.getFullYear();
     return `${month} ${day}${suffix}`;
   }
 
-  /**
-   * Generates and sends a productivity report
-   * @param {string} summaryType - The type of summary ("Daily" or "Weekly")
-   */
-  function generateReport(summaryType) {
-    /** @type {Date} */
+  function generateReport(summaryType: string): void {
     let today = new Date();
-    /** @type {string} */
-    let startDateString, endDateString, dateLabel;
-    /** @type {Date} */
-    let startDate, endDate;
+    let startDateString: string, endDateString: string, dateLabel: string;
+    let startDate: Date, endDate: Date;
 
     if (summaryType === "Daily") {
       startDate = new Date(today);
       endDate = new Date(today);
-      startDate.setHours(0, 0, 0, 0); // Set start date to hour/minute/second zero
-      endDate.setHours(23, 59, 59, 999); // Set end date to maximum hour/minute/second
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
       startDateString = endDateString = formatDate(today);
       dateLabel = `${startDateString}`;
     } else if (summaryType === "Weekly") {
       startDate = getWeekStartDate(today);
-      startDate.setHours(0, 0, 0, 0); // Set start date to hour/minute/second zero
+      startDate.setHours(0, 0, 0, 0);
       endDate = today;
-      endDate.setHours(23, 59, 59, 999); // Set end date to maximum hour/minute/second
+      endDate.setHours(23, 59, 59, 999);
       startDateString = formatDate(getWeekStartDate(today));
       endDateString = formatDate(today);
       dateLabel = `${startDateString} to ${endDateString}`;
     } else {
-      return; // No valid selection made
+      return;
     }
 
     // Filter tasks based on the date range
-    /** @type {Task[]} */
     let completedTasks = flattenedTasks.filter((task) => {
-      /** @type {boolean} */
       let isDropped = task.effectiveDropDate != null;
-      /** @type {boolean} */
       let isCompleted = task.effectiveCompletionDate != null;
 
       return !isDropped && isCompleted && task.effectiveCompletionDate >= startDate && task.effectiveCompletionDate <= endDate;
     });
 
     // Count tasks with no project (Inbox tasks)
-    /** @type {number} */
     let inboxTasksCount = completedTasks.filter((task) => !task.containingProject).length;
 
     // Count tasks with a project
-    /** @type {number} */
     let projectTasksCount = completedTasks.length - inboxTasksCount;
 
     // Determine progressed projects and mark completed ones
-    /** @type {string[]} */
-    let progressedProjects = [];
-    /** @type {string[]} */
-    let completedProjects = [];
+    let progressedProjects: string[] = [];
+    let completedProjects: string[] = [];
     completedTasks.forEach((task) => {
-      /** @type {Project | null} */
       const project = task.containingProject;
 
       if (project === null) {
         return;
       }
 
-      /** @type {string} */
       let projectName = fullProjectPath(project);
 
       if (project.completed) {
@@ -193,52 +134,40 @@
       }
     });
 
-    /** @type {Set<string>} */
-    progressedProjects = new Set(progressedProjects.sort());
-    /** @type {Set<string>} */
-    completedProjects = new Set(completedProjects.sort());
+    const uniqueProgressedProjects = [...new Set(progressedProjects.sort())];
+    const uniqueCompletedProjects = [...new Set(completedProjects.sort())];
 
     // Tasks with due dates completed during the selected period
-    /** @type {number} */
     let dueTasksCount = completedTasks.filter((task) => task.dueDate).length;
 
     // Tasks with due dates that weren't finished during the selected period
-    /** @type {Task[]} */
     let unfinishedDueTasks = flattenedTasks.filter((task) => {
-      /** @type {boolean} */
       let isDropped = task.effectiveDropDate != null;
-      /** @type {boolean} */
       let isCompleted = task.effectiveCompletionDate != null;
 
       return !isDropped && !isCompleted && task.effectiveDueDate && task.effectiveDueDate <= endDate;
     });
 
-    // Data to be sent
-    /** @type {ProductivityReport.ReportData} */
-    let data = {
+    let data: ProductivityReport.ReportData = {
       date: dateLabel,
       totalCompletedTasks: completedTasks.length,
       inboxTasks: inboxTasksCount,
       projectTasks: projectTasksCount,
-      progressedProjects: [...progressedProjects],
-      completedProjects: [...completedProjects],
+      progressedProjects: uniqueProgressedProjects,
+      completedProjects: uniqueCompletedProjects,
       completedTasksWithDueDates: dueTasksCount,
       unfinishedTasksWithTodaysDueDate: unfinishedDueTasks.length,
     };
 
-    // Creating a Fetch Request
     retrieveOrRequestWebhookUrl()
       .then((webhookUrl) => {
-        /** @type {URL.FetchRequest} */
-        let request = URL.FetchRequest.fromString(webhookUrl);
+        let request = (URL as any).FetchRequest.fromString(webhookUrl);
         request.method = "POST";
         request.bodyString = JSON.stringify(data);
         request.headers = { "Content-Type": "application/json" };
 
         console.log(`Sending request to ${webhookUrl} with data: ${request.bodyString}...`);
 
-        // Submit the request
-        // Because it's a webhook, we'll know pretty immediately if it doesn't work.
         request.fetch();
       })
       .catch((error) => {
@@ -246,19 +175,14 @@
       });
   }
 
-  const action = new PlugIn.Action(function (selection, sender) {
+  const action = new PlugIn.Action(function (selection: any, sender: any) {
     if (sender) {
-      // Create a new Form
-      /** @type {Form} */
       let form = new Form();
-      /** @type {Form.Field.Option} */
-      let summaryTypeField = new Form.Field.Option("summaryType", "Summary Type", ["Daily", "Weekly"], null, "Daily");
-      form.addField(summaryTypeField);
+      let summaryTypeField = new Form.Field.Option("summaryType", "Summary Type", ["Daily", "Weekly"], null, "Daily", null);
+      form.addField(summaryTypeField, null);
 
-      /** @type {Promise<ProductivityReport.FormObject>} */
-      form.show("Choose Summary Type", "Continue").then((form) => {
-        /** @type {string} */
-        let summaryType = form.values["summaryType"];
+      form.show("Choose Summary Type", "Continue").then((formResult: any) => {
+        let summaryType = formResult.values["summaryType"];
         generateReport(summaryType);
       });
     } else {
@@ -266,13 +190,7 @@
     }
   });
 
-  /**
-   * Validates the action can be performed
-   * @param {Selection} selection - The current selection
-   * @param {any} sender - The sender of the action
-   * @returns {boolean} - Whether the action can be performed
-   */
-  action.validate = function (selection, sender) {
+  action.validate = function (_selection: any, _sender: any): boolean {
     return true;
   };
 
