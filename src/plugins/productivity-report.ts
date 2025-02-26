@@ -11,6 +11,10 @@
     "image": "arrow.up.doc"
 }*/
 
+interface WebhookFormValues {
+    webhookUrl: string;
+}
+
 (() => {
   const webhookService = "com.omnifocus.assistant.webhook";
   const credentials = new Credentials();
@@ -22,15 +26,16 @@
       const webhookField = new Form.Field.String("webhookUrl", "Webhook URL", "", null);
       inputForm.addField(webhookField, null);
       const formPrompt = "Enter Webhook URL where results should be sent:";
-      const formObject = (await inputForm.show(formPrompt, "Continue")) as any as ProductivityReport.FormObject;
-      const webhookUrl = formObject.values["webhookUrl"];
+      const formObject = (await inputForm.show(formPrompt, "Continue"));
+      
+      const webhookUrl = (formObject.values as WebhookFormValues)["webhookUrl"];
       if (webhookUrl) {
         await credentials.write(webhookService, "user", webhookUrl);
         return webhookUrl;
       }
       return "";
     } else {
-      return (credential as Credential).password;
+      return (credential as any).password;
     }
   }
 

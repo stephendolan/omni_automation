@@ -1,4 +1,4 @@
-declare namespace Types {
+declare namespace DatabaseExport {
     interface TaskJson {
         id: string;
         name: string;
@@ -37,11 +37,13 @@ declare namespace Types {
         notes: string;
         sequential: boolean;
         tasks: TaskJson[];
+        folderName?: string | null;
     }
 
     interface FolderJson {
         id: string;
         name: string;
+        status: string;
         type: 'Folder';
         folders: FolderJson[];
         projects: ProjectJson[];
@@ -51,11 +53,9 @@ declare namespace Types {
         timestamp: string;
         folders: FolderJson[];
         perspectives: {
-            next: TaskJson[] | null;
-            forecast: TaskJson[] | null;
-            agendas: TaskJson[] | null;
-            badWaiting: TaskJson[] | null;
-            noAction: TaskJson[] | null;
-        };
+            name: string;
+            description: string;
+            items: (TaskJson | ProjectJson)[] | null;
+        }[];
     }
 } 

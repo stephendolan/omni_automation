@@ -24,4 +24,28 @@ if (fs.existsSync(pluginsDir)) {
   });
 }
 
+// Remove the dist folder after processing
+function removeDirectory(dirPath) {
+  if (fs.existsSync(dirPath)) {
+    fs.readdirSync(dirPath).forEach((file) => {
+      const curPath = path.join(dirPath, file);
+      if (fs.lstatSync(curPath).isDirectory()) {
+        // Recursive call for directories
+        removeDirectory(curPath);
+      } else {
+        // Delete file
+        fs.unlinkSync(curPath);
+      }
+    });
+    // Delete the now-empty directory
+    fs.rmdirSync(dirPath);
+    console.log(`Removed: ${dirPath}`);
+  }
+}
+
+const distDir = path.join(process.cwd(), "dist");
+if (fs.existsSync(distDir)) {
+  removeDirectory(distDir);
+}
+
 console.log("Post-build processing complete!");
