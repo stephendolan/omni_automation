@@ -11,19 +11,34 @@
     "image": "arrow.up.doc"
 }*/
 
+/// <reference path="./types/omnifocus.d.ts" />
+/// <reference path="./types/productivity-report.d.ts" />
+
 (() => {
+  /** @type {string} */
   const webhookService = "com.omnifocus.assistant.webhook";
+  /** @type {Credentials} */
   const credentials = new Credentials();
 
+  /**
+   * Retrieves the webhook URL from credentials or requests it from the user
+   * @returns {Promise<string>} The webhook URL
+   */
   async function retrieveOrRequestWebhookUrl() {
-    var credential = await credentials.read(webhookService);
+    /** @type {Credential | null} */
+    const credential = await credentials.read(webhookService);
     if (!credential) {
-      var inputForm = new Form();
-      var webhookField = new Form.Field.String("webhookUrl", "Webhook URL", "");
+      /** @type {Form} */
+      const inputForm = new Form();
+      /** @type {Form.Field.String} */
+      const webhookField = new Form.Field.String("webhookUrl", "Webhook URL", "");
       inputForm.addField(webhookField);
-      var formPrompt = "Enter Webhook URL where results should be sent:";
-      var formObject = await inputForm.show(formPrompt, "Continue");
-      var webhookUrl = formObject.values["webhookUrl"];
+      /** @type {string} */
+      const formPrompt = "Enter Webhook URL where results should be sent:";
+      /** @type {{values: {webhookUrl: string}}} */
+      const formObject = await inputForm.show(formPrompt, "Continue");
+      /** @type {string} */
+      const webhookUrl = formObject.values["webhookUrl"];
       await credentials.write(webhookService, "user", webhookUrl);
       return webhookUrl;
     } else {
@@ -31,6 +46,11 @@
     }
   }
 
+  /**
+   * Gets the appropriate suffix for a day number
+   * @param {number} day - The day of the month
+   * @returns {string} The suffix for the day
+   */
   function getDaySuffix(day) {
     if (day >= 11 && day <= 13) {
       return "th";
@@ -47,9 +67,15 @@
     }
   }
 
-  // Function to get a full project path, including all parent folders.
+  /**
+   * Gets the full project path, including all parent folders
+   * @param {Project} project - The project
+   * @returns {string} The full project path
+   */
   function fullProjectPath(project) {
+    /** @type {string} */
     let path = project.name;
+    /** @type {Folder | null} */
     let parent = project.parentFolder;
 
     while (parent) {
@@ -60,27 +86,51 @@
     return path;
   }
 
-  // Function to get the start date of the current week (Monday)
+  /**
+   * Gets the start date of the current week (Monday)
+   * @param {Date} date - The reference date
+   * @returns {Date} The start date of the week
+   */
   function getWeekStartDate(date) {
-    var d = new Date(date);
-    var day = d.getDay(),
-      diff = d.getDate() - day + (day == 0 ? -6 : 1); // Adjust if day is Sunday
+    /** @type {Date} */
+    const d = new Date(date);
+    /** @type {number} */
+    const day = d.getDay();
+    /** @type {number} */
+    const diff = d.getDate() - day + (day == 0 ? -6 : 1); // Adjust if day is Sunday
     return new Date(d.setDate(diff));
   }
 
-  // Function to format the date to YYYY-MM-DD
+  /**
+   * Formats a date to a readable string
+   * @param {Date} date - The date to format
+   * @returns {string} The formatted date string
+   */
   function formatDate(date) {
-    var d = new Date(date),
-      month = d.toLocaleString("default", { month: "long" }),
-      day = d.getDate(),
-      suffix = getDaySuffix(day),
-      year = d.getFullYear();
+    /** @type {Date} */
+    const d = new Date(date);
+    /** @type {string} */
+    const month = d.toLocaleString("default", { month: "long" });
+    /** @type {number} */
+    const day = d.getDate();
+    /** @type {string} */
+    const suffix = getDaySuffix(day);
+    /** @type {number} */
+    const year = d.getFullYear();
     return `${month} ${day}${suffix}`;
   }
 
+  /**
+   * Generates and sends a productivity report
+   * @param {string} summaryType - The type of summary ("Daily" or "Weekly")
+   */
   function generateReport(summaryType) {
+    /** @type {Date} */
     let today = new Date();
-    let startDateString, startDate, endDateString, endDate, dateLabel;
+    /** @type {string} */
+    let startDateString, endDateString, dateLabel;
+    /** @type {Date} */
+    let startDate, endDate;
 
     if (summaryType === "Daily") {
       startDate = new Date(today);
@@ -102,29 +152,38 @@
     }
 
     // Filter tasks based on the date range
+    /** @type {Task[]} */
     let completedTasks = flattenedTasks.filter((task) => {
+      /** @type {boolean} */
       let isDropped = task.effectiveDropDate != null;
+      /** @type {boolean} */
       let isCompleted = task.effectiveCompletionDate != null;
 
       return !isDropped && isCompleted && task.effectiveCompletionDate >= startDate && task.effectiveCompletionDate <= endDate;
     });
 
     // Count tasks with no project (Inbox tasks)
+    /** @type {number} */
     let inboxTasksCount = completedTasks.filter((task) => !task.containingProject).length;
 
     // Count tasks with a project
+    /** @type {number} */
     let projectTasksCount = completedTasks.length - inboxTasksCount;
 
     // Determine progressed projects and mark completed ones
+    /** @type {string[]} */
     let progressedProjects = [];
+    /** @type {string[]} */
     let completedProjects = [];
     completedTasks.forEach((task) => {
+      /** @type {Project | null} */
       const project = task.containingProject;
 
       if (project === null) {
         return;
       }
 
+      /** @type {string} */
       let projectName = fullProjectPath(project);
 
       if (project.completed) {
@@ -134,21 +193,28 @@
       }
     });
 
+    /** @type {Set<string>} */
     progressedProjects = new Set(progressedProjects.sort());
+    /** @type {Set<string>} */
     completedProjects = new Set(completedProjects.sort());
 
     // Tasks with due dates completed during the selected period
+    /** @type {number} */
     let dueTasksCount = completedTasks.filter((task) => task.dueDate).length;
 
     // Tasks with due dates that weren't finished during the selected period
+    /** @type {Task[]} */
     let unfinishedDueTasks = flattenedTasks.filter((task) => {
+      /** @type {boolean} */
       let isDropped = task.effectiveDropDate != null;
+      /** @type {boolean} */
       let isCompleted = task.effectiveCompletionDate != null;
 
       return !isDropped && !isCompleted && task.effectiveDueDate && task.effectiveDueDate <= endDate;
     });
 
     // Data to be sent
+    /** @type {ProductivityReport.ReportData} */
     let data = {
       date: dateLabel,
       totalCompletedTasks: completedTasks.length,
@@ -163,6 +229,7 @@
     // Creating a Fetch Request
     retrieveOrRequestWebhookUrl()
       .then((webhookUrl) => {
+        /** @type {URL.FetchRequest} */
         let request = URL.FetchRequest.fromString(webhookUrl);
         request.method = "POST";
         request.bodyString = JSON.stringify(data);
@@ -179,14 +246,18 @@
       });
   }
 
-  var action = new PlugIn.Action(function (selection, sender) {
+  const action = new PlugIn.Action(function (selection, sender) {
     if (sender) {
       // Create a new Form
+      /** @type {Form} */
       let form = new Form();
+      /** @type {Form.Field.Option} */
       let summaryTypeField = new Form.Field.Option("summaryType", "Summary Type", ["Daily", "Weekly"], null, "Daily");
       form.addField(summaryTypeField);
 
+      /** @type {Promise<ProductivityReport.FormObject>} */
       form.show("Choose Summary Type", "Continue").then((form) => {
+        /** @type {string} */
         let summaryType = form.values["summaryType"];
         generateReport(summaryType);
       });
@@ -194,6 +265,16 @@
       generateReport("Daily");
     }
   });
+
+  /**
+   * Validates the action can be performed
+   * @param {Selection} selection - The current selection
+   * @param {any} sender - The sender of the action
+   * @returns {boolean} - Whether the action can be performed
+   */
+  action.validate = function (selection, sender) {
+    return true;
+  };
 
   return action;
 })();

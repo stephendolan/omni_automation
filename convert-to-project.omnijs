@@ -11,17 +11,44 @@
     "paletteLabel": "Project Converter",
     "image": "arrow.up.forward.square"
 }*/
+
+/// <reference path="./types/omnifocus.d.ts" />
+/// <reference path="./types/project-converter.d.ts" />
+
 (() => {
+  /**
+   * Moves tasks from one container to another
+   * @param {TaskArray} tasks - The tasks to move
+   * @param {Project | Task} destination - The destination container
+   */
+  const moveTasks = (tasks, destination) => {
+    tasks.forEach((task) => {
+      const newTask = new Task(task.name, destination);
+      newTask.note = task.note;
+      newTask.dueDate = task.dueDate;
+      newTask.deferDate = task.deferDate;
+
+      if (task.children.length > 0) {
+        moveTasks(task.children, newTask);
+      }
+    });
+  };
+
   const action = new PlugIn.Action(async function (selection) {
+    /** @type {Task} */
     const selectedTask = selection.tasks[0];
+    /** @type {boolean} */
     const hasChildren = selectedTask.children.length > 0;
 
+    /** @type {Form} */
     const form = new Form();
     form.title = "Create Project";
     form.addField(new Form.Field.String("projectTitle", "Project Title", selectedTask.name));
 
     // Retrieve and format top-level and second-level folders, excluding dropped folders
+    /** @type {FolderArray} */
     const topLevelFolders = flattenedFolders.filter((folder) => !folder.parent && folder.status !== Folder.Status.Dropped);
+    /** @type {string[]} */
     let folderNames = [];
 
     topLevelFolders.forEach((folder) => {
@@ -33,7 +60,9 @@
         });
     });
 
+    /** @type {string} */
     const defaultFolderStart = "Tuple : Ops";
+    /** @type {string} */
     const prioritizedFolder = "Tuple";
     folderNames.sort((a, b) => {
       if (a.startsWith(defaultFolderStart) && !b.startsWith(defaultFolderStart)) {
@@ -56,10 +85,18 @@
       form.addField(new Form.Field.String("newTaskTitle", "Task Title", selectedTask.name));
     }
 
+    /** @type {string} */
     const formPrompt = "Configure your project:";
+    /** @type {string} */
     const buttonTitle = "Continue";
+    /** @type {Promise<ProjectConverter.FormObject>} */
     const formPromise = form.show(formPrompt, buttonTitle);
 
+    /**
+     * Validates the form input
+     * @param {ProjectConverter.FormObject} formObject - The form object to validate
+     * @returns {boolean} - Whether the form is valid
+     */
     form.validate = function (formObject) {
       const projectTitle = formObject.values["projectTitle"];
       const folder = formObject.values["folderName"];
@@ -68,23 +105,32 @@
     };
 
     formPromise.then((formObject) => {
+      /** @type {string} */
       const projectTitle = formObject.values["projectTitle"];
+      /** @type {string} */
       const folderName = formObject.values["folderName"];
 
       // Find the folder by name
+      /** @type {string[]} */
       const folderNames = folderName.split(" : ");
+      /** @type {string} */
       const terminalFolder = folderNames[folderNames.length - 1];
+      /** @type {Folder | null} */
       const folder = flattenedFolders.find((f) => f.name === terminalFolder);
 
+      /** @type {Project} */
       const project = new Project(projectTitle, folder);
 
       if (hasChildren) {
         moveTasks(selectedTask.children, project);
       } else {
+        /** @type {boolean} */
         const addToProject = formObject.values["addToProject"];
+        /** @type {string | undefined} */
         const newTaskTitle = formObject.values["newTaskTitle"];
 
         if (addToProject) {
+          /** @type {Task} */
           const newTask = new Task(newTaskTitle || selectedTask.name, project);
           newTask.note = selectedTask.note;
           newTask.dueDate = selectedTask.dueDate;
@@ -108,6 +154,12 @@
     });
   });
 
+  /**
+   * Validates the selection for the action
+   * @param {Selection} selection - The current selection
+   * @param {any} _sender - The sender of the action
+   * @returns {boolean} - Whether the action can be performed
+   */
   action.validate = function (selection, _sender) {
     return selection.tasks.length === 1;
   };

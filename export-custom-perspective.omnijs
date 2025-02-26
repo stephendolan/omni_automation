@@ -11,32 +11,51 @@
   "image": "square.and.arrow.up"
 }*/
 
+/// <reference path="./types/omnifocus.d.ts" />
+/// <reference path="./types/perspective-exporter.d.ts" />
+
 (() => {
-  var action = new PlugIn.Action(async function (_selection, _sender) {
+  const action = new PlugIn.Action(async function (_selection, _sender) {
     try {
-      perspectives = new Array();
+      /** @type {Perspective.Custom[]} */
+      let perspectives = new Array();
       perspectives = perspectives.concat(Perspective.Custom.all);
-      perspectiveNames = perspectives.map((perspective) => {
+
+      /** @type {string[]} */
+      const perspectiveNames = perspectives.map((perspective) => {
         return perspective.name;
       });
-      itemIndexes = new Array();
+
+      /** @type {number[]} */
+      const itemIndexes = new Array();
       perspectiveNames.forEach((name, index) => {
         itemIndexes.push(index);
       });
 
-      perspectiveMenu = new Form.Field.Option("perspective", "Perspective", itemIndexes, perspectiveNames, 0);
+      /** @type {Form.Field.Option} */
+      const perspectiveMenu = new Form.Field.Option("perspective", "Perspective", itemIndexes, perspectiveNames, 0);
       perspectiveMenu.allowsNull = false;
 
-      inputForm = new Form();
+      /** @type {Form} */
+      const inputForm = new Form();
       inputForm.addField(perspectiveMenu);
-      formPrompt = "Custom perspective to export:";
-      buttonTitle = "Continue";
-      formObject = await inputForm.show(formPrompt, buttonTitle);
 
-      chosenPerspective = perspectives[formObject.values["perspective"]];
-      wrapper = chosenPerspective.fileWrapper();
-      filesaver = new FileSaver();
-      savedFileURL = await filesaver.show(wrapper);
+      /** @type {string} */
+      const formPrompt = "Custom perspective to export:";
+      /** @type {string} */
+      const buttonTitle = "Continue";
+
+      /** @type {PerspectiveExporter.FormObject} */
+      const formObject = await inputForm.show(formPrompt, buttonTitle);
+
+      /** @type {Perspective.Custom} */
+      const chosenPerspective = perspectives[formObject.values["perspective"]];
+      /** @type {FileWrapper} */
+      const wrapper = chosenPerspective.fileWrapper();
+      /** @type {FileSaver} */
+      const filesaver = new FileSaver();
+      /** @type {URL | null} */
+      const savedFileURL = await filesaver.show(wrapper);
     } catch (err) {
       if (!err.causedByUserCancelling) {
         new Alert(err.name, err.message).show();
@@ -44,6 +63,12 @@
     }
   });
 
+  /**
+   * Validates the action can be performed
+   * @param {Selection} _selection - The current selection
+   * @param {any} _sender - The sender of the action
+   * @returns {boolean} - Whether the action can be performed
+   */
   action.validate = function (_selection, _sender) {
     return Perspective.Custom.all.length > 0;
   };
