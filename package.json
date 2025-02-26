@@ -1,0 +1,13 @@
+{
+  "name": "omnifocus-plugins",
+  "version": "1.0.0",
+  "description": "TypeScript OmniFocus plugins",
+  "scripts": {
+    "build": "tsc && node scripts/post-build.js",
+    "clean": "rimraf *.omnijs"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3"
+  }
+} 

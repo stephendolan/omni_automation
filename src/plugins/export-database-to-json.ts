@@ -12,18 +12,13 @@
     "image": "square.and.arrow.up"
 }*/
 
-/// <reference path="./types/omnifocus.d.ts" />
-/// <reference path="./types/database-export.d.ts" />
-
 (() => {
-  let action = new PlugIn.Action(function (_selection, _sender) {
-    /** @param {Date | null} date */
-    const formatDate = (date) => {
+  let action = new PlugIn.Action(function (_selection: any, _sender: any) {
+    const formatDate = (date: Date | null) => {
       return date ? date.toISOString() : null;
     };
 
-    /** @param {Task.Status} status */
-    const getTaskStatusString = (status) => {
+    const getTaskStatusString = (status: Task.Status) => {
       if (status === Task.Status.Active) return "Active";
       if (status === Task.Status.Blocked) return "Blocked";
       if (status === Task.Status.Dropped) return "Dropped";
@@ -34,8 +29,7 @@
       return "Unknown";
     };
 
-    /** @param {Project.Status} status */
-    const getProjectStatusString = (status) => {
+    const getProjectStatusString = (status: Project.Status) => {
       if (status === Project.Status.Active) return "Active";
       if (status === Project.Status.Done) return "Done";
       if (status === Project.Status.Dropped) return "Dropped";
@@ -43,33 +37,28 @@
       return "Unknown";
     };
 
-    /** @param {Folder.Status} status */
-    const getFolderStatusString = (status) => {
+    const getFolderStatusString = (status: Folder.Status) => {
       if (status === Folder.Status.Active) return "Active";
       if (status === Folder.Status.Dropped) return "Dropped";
       return "Unknown";
     };
 
-    /** @param {Task | Project} object */
-    const getPermalink = (object) => {
+    const getPermalink = (object: Task | Project) => {
       return `omnifocus:///task/${object.id.primaryKey}`;
     };
 
-    /** @param {Task.RepetitionMethod} method */
-    const getRepetitionMethodString = (method) => {
+    const getRepetitionMethodString = (method: Task.RepetitionMethod) => {
       if (method === Task.RepetitionMethod.Fixed) return "Fixed";
-      if (method === Task.RepetitionMethod.Start) return "Start";
-      if (method === Task.RepetitionMethod.Due) return "Due";
+      if (method === (Task.RepetitionMethod as any).Start) return "Start";
+      if (method === (Task.RepetitionMethod as any).Due) return "Due";
       return "Unknown";
     };
 
-    /** @param {Task} task @returns {boolean} */
-    const shouldSkipTask = (task) => {
+    const shouldSkipTask = (task: Task): boolean => {
       return task.taskStatus === Task.Status.Dropped || task.taskStatus === Task.Status.Blocked || task.effectiveCompletionDate !== null;
     };
 
-    /** @param {Task} task @returns {Types.TaskJson | null} */
-    const taskToJson = (task) => {
+    const taskToJson = (task: Task): DatabaseExport.TaskJson | null => {
       const effectivelyCompleted = task.effectiveCompletionDate !== null;
 
       if (shouldSkipTask(task)) {
@@ -97,14 +86,13 @@
               rule: task.repetitionRule.ruleString,
             }
           : null,
-        children: task.children.map((child) => taskToJson(child)).filter((child) => child !== null),
+        children: task.children.map((child) => taskToJson(child)).filter((child): child is DatabaseExport.TaskJson => child !== null),
         projectName: task.containingProject ? task.containingProject.name : null,
         folderName: task.containingProject?.parentFolder?.name || null,
       };
     };
 
-    /** @param {Project} project @returns {boolean} */
-    const shouldSkipProject = (project) => {
+    const shouldSkipProject = (project: Project): boolean => {
       return (
         project.status === Project.Status.Done ||
         project.effectiveCompletedDate !== null ||
@@ -113,15 +101,14 @@
       );
     };
 
-    /** @param {Project} project @returns {Types.ProjectJson | null} */
-    const projectToJson = (project) => {
+    const projectToJson = (project: Project): DatabaseExport.ProjectJson | null => {
       const effectivelyCompleted = project.effectiveCompletedDate !== null;
 
       if (shouldSkipProject(project)) {
         return null;
       }
 
-      const tasks = project.tasks.map((task) => taskToJson(task)).filter((task) => task !== null);
+      const tasks = project.tasks.map((task) => taskToJson(task)).filter((task): task is DatabaseExport.TaskJson => task !== null);
 
       return {
         id: project.id.primaryKey,
@@ -141,21 +128,14 @@
       };
     };
 
-    /**
-     * @param {Folder} folder The folder to check
-     * @param {Project[]} projects The folder's projects
-     * @param {Folder[]} subfolders The folder's subfolders
-     * @returns {boolean} Whether the folder should be skipped
-     */
-    const shouldSkipFolder = (folder, projects, subfolders) => {
+    const shouldSkipFolder = (folder: Folder, projects: DatabaseExport.ProjectJson[], subfolders: DatabaseExport.FolderJson[]): boolean => {
       return folder.status === Folder.Status.Dropped || (projects.length === 0 && subfolders.length === 0);
     };
 
-    /** @param {Folder} folder @returns {Types.FolderJson} */
-    const folderToJson = (folder) => {
-      const projects = folder.projects.map((project) => projectToJson(project)).filter((project) => project !== null);
+    const folderToJson = (folder: Folder): DatabaseExport.FolderJson | null => {
+      const projects = folder.projects.map((project) => projectToJson(project)).filter((project): project is DatabaseExport.ProjectJson => project !== null);
 
-      const subfolders = folder.folders.map((subfolder) => folderToJson(subfolder)).filter((subfolder) => subfolder !== null);
+      const subfolders = folder.folders.map((subfolder) => folderToJson(subfolder)).filter((subfolder): subfolder is DatabaseExport.FolderJson => subfolder !== null);
 
       if (shouldSkipFolder(folder, projects, subfolders)) {
         return null;
@@ -171,11 +151,10 @@
       };
     };
 
-    /** @param {Perspective.BuiltIn | Perspective.Custom} perspective @returns {(Types.TaskJson | Types.ProjectJson | Types.ContextJson)[] | null} */
-    const getPerspectiveData = (perspective) => {
+    const getPerspectiveData = (perspective: Perspective.BuiltIn | Perspective.Custom): (DatabaseExport.TaskJson | DatabaseExport.ProjectJson)[] | null => {
       try {
         // Get the first window
-        const window = document.windows[0];
+        const window = (document as any).windows[0];
         if (!window) {
           console.error("No window available");
           return null;
@@ -191,10 +170,10 @@
           return null;
         }
 
-        const items = [];
+        const items: (DatabaseExport.TaskJson | DatabaseExport.ProjectJson)[] = [];
 
         // Walk the tree and collect tasks and projects
-        tree.rootNode.apply((node) => {
+        tree.rootNode.apply((node: any) => {
           const item = node.object;
 
           if (item instanceof Task) {
@@ -245,15 +224,14 @@
       },
     ];
 
-    /** @type {Types.DatabaseJson} */
-    const output = {
+    const output: DatabaseExport.DatabaseJson = {
       timestamp: new Date().toISOString(),
       perspectives: perspectives.map(({ name, perspective, description }) => ({
         name,
         description,
-        items: getPerspectiveData(perspective),
+        items: perspective ? getPerspectiveData(perspective) : null,
       })),
-      folders: folders.map((folder) => folderToJson(folder)).filter((folder) => folder !== null),
+      folders: ((window as any).folders as Folder[]).map((folder: Folder) => folderToJson(folder)).filter((folder): folder is DatabaseExport.FolderJson => folder !== null),
     };
 
     // Convert to JSON string with pretty printing
@@ -263,14 +241,14 @@
     Pasteboard.general.string = jsonString;
 
     // Show confirmation
-    new Alert("Database Exported", "The database has been exported to your clipboard in JSON format.").show(() => null);
+    new Alert("Database Exported", "The database has been exported to your clipboard in JSON format.").show(() => {});
 
     console.log("Export completed successfully");
   });
 
-  action.validate = function (_selection, _sender) {
+  action.validate = function (_selection: any, _sender: any): boolean {
     return true;
   };
 
   return action;
-})();
+})(); 

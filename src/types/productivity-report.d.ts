@@ -1,12 +1,4 @@
 declare namespace ProductivityReport {
-  interface FormValues {
-    summaryType: string;
-  }
-
-  interface FormObject {
-    values: FormValues;
-  }
-
   interface ReportData {
     date: string;
     totalCompletedTasks: number;
@@ -17,4 +9,4 @@ declare namespace ProductivityReport {
     completedTasksWithDueDates: number;
     unfinishedTasksWithTodaysDueDate: number;
   }
-} 
+}

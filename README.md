@@ -4,10 +4,12 @@ A collection of automation plugins for OmniFocus to enhance productivity and wor
 
 ## Installation
 
-1. Download the desired `.omnijs` plugin file
+1. Go to the [Releases page](https://github.com/stephendolan/omni_automation/releases) and download the latest `.omnijs` plugin files
 2. Open OmniFocus
 3. Select Automation > Configure from the menu bar
 4. Click the `+` button and select the downloaded plugin file
+
+You can also clone this repository and build the plugins yourself by running `npm run build`.
 
 ## Available Plugins
 
@@ -49,5 +51,33 @@ Generate detailed productivity summaries and send them to a webhook:
 - Configurable webhook integration for external processing
 
 ## Development
+
+### TypeScript Setup
+
+This repository uses TypeScript for plugin development. The TypeScript code is compiled to JavaScript and then converted to `.omnijs` files that can be used by OmniFocus.
+
+#### Directory Structure
+
+- `src/plugins/`: Contains the TypeScript source code for the plugins
+- `src/types/`: Contains TypeScript type definitions
+- `scripts/`: Contains build scripts
+
+#### Development Workflow
+
+1. Write your TypeScript code in the `src/plugins/` directory
+2. Use the type definitions in `src/types/` for OmniFocus API
+3. Run `npm run build` to compile the TypeScript code and generate the `.omnijs` files
+4. The generated `.omnijs` files will be placed in the root directory
+
+#### Commands
+
+- `npm run build`: Build the plugins
+- `npm run clean`: Remove all generated `.omnijs` files
+
+#### Adding a New Plugin
+
+1. Create a new TypeScript file in `src/plugins/`
+2. Add any necessary type definitions in `src/types/`
+3. Run `npm run build` to generate the `.omnijs` file
 
 More details about OmniAutomation can be found in the [official documentation](https://omni-automation.com/).
