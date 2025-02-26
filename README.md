@@ -4,7 +4,7 @@ A collection of automation plugins for OmniFocus to enhance productivity and wor
 
 ## Installation
 
-1. Go to the [Releases page](https://github.com/stephendolan/omni_automation/releases) and download the latest `.omnijs` plugin files
+1. Go to the [latest Release in GitHub](https://github.com/stephendolan/omni_automation/releases/latest) and download the `.omnijs` plugin file you want to install
 2. Open OmniFocus
 3. Select Automation > Configure from the menu bar
 4. Click the `+` button and select the downloaded plugin file
