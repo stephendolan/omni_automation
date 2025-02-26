@@ -12,10 +12,10 @@ jobs:
       contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@latest
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@latest
+        uses: actions/setup-node@v4
 
       - name: Install dependencies
         run: npm ci
