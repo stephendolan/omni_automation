@@ -97,7 +97,7 @@
         return formObject.values["projectTitle"].length > 0;
       };
 
-      form.show("Create", "Cancel").then((formPromise: any) => {
+      form.show("Convert to Project", "Convert").then((formPromise: any) => {
         const values = formPromise.values;
 
         // Find the folder by name
