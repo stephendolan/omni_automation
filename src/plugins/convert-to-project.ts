@@ -68,17 +68,18 @@
       });
 
       // Create a list of folder names
+      const defaultFolderName = "Tuple";
       const folderNames = topLevelFolders
         .concat(secondLevelFolders)
         .map((folder: Folder) => folder.name)
         .sort((a: string, b: string) => {
           // Sort by whether the folder name contains "Active" first
-          const aHasActive = a.includes("Active");
-          const bHasActive = b.includes("Active");
+          const aIsDefault = a.includes(defaultFolderName);
+          const bIsDefault = b.includes(defaultFolderName);
 
-          if (aHasActive && !bHasActive) {
+          if (aIsDefault && !bIsDefault) {
             return -1;
-          } else if (!aHasActive && bHasActive) {
+          } else if (!aIsDefault && bIsDefault) {
             return 1;
           } else {
             // Then sort alphabetically
