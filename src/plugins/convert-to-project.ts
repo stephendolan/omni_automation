@@ -58,17 +58,13 @@
       form.addField(new Form.Field.String("projectTitle", "Project Title", task.name, null), null);
 
       // Get top-level folders, excluding any dropped folders
-      const topLevelFolders = (window as any).flattenedFolders.filter((folder: Folder) => {
+      const topLevelFolders = flattenedFolders.filter((folder: Folder) => {
         return folder.parent === null && folder.status !== Folder.Status.Dropped;
       });
 
       // Get second-level folders, excluding any dropped folders
-      const secondLevelFolders = (window as any).flattenedFolders.filter((folder: Folder) => {
-        return (
-          folder.parent !== null &&
-          folder.parent.parent === null &&
-          folder.status !== Folder.Status.Dropped
-        );
+      const secondLevelFolders = flattenedFolders.filter((folder: Folder) => {
+        return folder.parent !== null && folder.parent.parent === null && folder.status !== Folder.Status.Dropped;
       });
 
       // Create a list of folder names
@@ -90,20 +86,10 @@
           }
         });
 
-      form.addField(
-        new Form.Field.Option("folderName", "Folder", folderNames, null, folderNames[0], null), 
-        null
-      );
+      form.addField(new Form.Field.Option("folderName", "Folder", folderNames, null, folderNames[0], null), null);
 
       if (hasChildren) {
-        form.addField(
-          new Form.Field.Checkbox(
-            "addTaskToProject",
-            "Add original task to project",
-            false
-          ),
-          null
-        );
+        form.addField(new Form.Field.Checkbox("addTaskToProject", "Add original task to project", false), null);
       }
 
       form.validate = function (formObject: any): boolean {
@@ -114,9 +100,7 @@
         const values = formPromise.values;
 
         // Find the folder by name
-        const folder = ((window as any).flattenedFolders as Folder[]).find(
-          (folder: Folder) => folder.name === values["folderName"]
-        );
+        const folder = (flattenedFolders as Folder[]).find((folder: Folder) => folder.name === values["folderName"]);
 
         if (!folder) {
           throw new Error(`Folder "${values["folderName"]}" not found`);
@@ -171,4 +155,4 @@
   };
 
   return action;
-})(); 
+})();
