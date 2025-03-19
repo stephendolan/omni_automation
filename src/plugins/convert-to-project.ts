@@ -49,7 +49,7 @@
 
   let action = new PlugIn.Action(function (selection: any, _sender: any) {
     try {
-      const task = selection.tasks[0];
+      const task = selection.tasks[0] as Task;
       const hasChildren = task.children.length > 0;
 
       const form = new Form();
@@ -89,9 +89,9 @@
 
       form.addField(new Form.Field.Option("folderName", "Folder", folderNames, null, folderNames[0], null), null);
 
-      if (hasChildren) {
-        form.addField(new Form.Field.Checkbox("addTaskToProject", "Add original task to project", false), null);
-      }
+      form.addField(new Form.Field.Checkbox("addTaskToProject", "Add original task to project", false), null);
+
+      form.addField(new Form.Field.String("taskTitleOverride", "New task title", task.name, null), null);
 
       form.validate = function (formObject: any): boolean {
         return formObject.values["projectTitle"].length > 0;
@@ -133,15 +133,19 @@
         }
 
         // Add the original task to the project if requested
-        if (hasChildren && values["addTaskToProject"]) {
-          const newTask = new Task(task.name, project);
-          if (task.note) {
-            newTask.note = task.note;
-          }
+        if (values["addTaskToProject"]) {
+          task.assignedContainer = project;
+          task.name = values["taskTitleOverride"];
+        } else {
+          task.drop(true, null);
         }
 
-        // Delete the original task
-        task.remove();
+        // Open the project
+        if (project.url) {
+          (URL as any).fromString(`omnifocus:///task/${project.id.primaryKey}`).open();
+        }
+
+        cleanUp();
       });
     } catch (err: any) {
       if (!err.causedByUserCancelling) {

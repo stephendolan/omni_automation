@@ -2126,3 +2126,5 @@ declare namespace XML.WhitespaceBehavior {
 declare const flattenedTasks: TaskArray;
 declare const folders: FolderArray;
 declare const flattenedFolders: FolderArray;
+declare function deleteObject(object: DatabaseObject): void;
+declare function cleanUp(): void;
