@@ -89,7 +89,7 @@
 
       form.addField(new Form.Field.Option("folderName", "Folder", folderNames, null, folderNames[0], null), null);
 
-      form.addField(new Form.Field.Checkbox("addTaskToProject", "Add original task to project", true), null);
+      form.addField(new Form.Field.Checkbox("addTaskToProject", "Add original task to project", !hasChildren), null);
 
       form.addField(new Form.Field.String("taskTitleOverride", "New task title", task.name, null), null);
 
